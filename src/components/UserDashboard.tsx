@@ -146,7 +146,7 @@ export default function UserDashboard() {
           <div>
             <h1 className="font-heading text-2xl font-bold text-white tracking-tight flex items-center gap-2">
               <MapPin className="text-accent" />
-              CivicMap
+              NagarSeva
             </h1>
             <p className="font-mono text-xs text-white/50 truncate mt-1">{user?.email}</p>
           </div>
