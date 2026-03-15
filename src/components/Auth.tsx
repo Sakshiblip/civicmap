@@ -26,7 +26,7 @@ export default function Auth() {
     try {
       if (isForgotPassword) {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: 'http://localhost:5173/reset-password',
+          redirectTo: 'http://https://nagarseva-mumbai.vercel.app/reset-password',
         });
         if (error) throw error;
         setSuccessMsg('Password reset link sent — check your inbox');
