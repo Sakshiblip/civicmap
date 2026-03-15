@@ -101,7 +101,7 @@ export default function Auth() {
             <MapPin className="text-accent w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold font-heading text-white">CivicMap</h1>
+            <h1 className="text-3xl font-bold font-heading text-white">NagarSeva</h1>
             <p className="text-white/60 text-sm font-body">Citizen Issue Reporting Portal</p>
           </div>
         </div>
