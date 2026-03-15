@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Epilogue:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-white font-body m-0 p-0 overflow-hidden;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-surface/80 backdrop-blur-md border border-white/10;
+  }
+  .glass-card {
+    @apply bg-surface/90 backdrop-blur-sm border border-white/5 rounded-xl shadow-xl;
+  }
+}
+
+/* Leaflet Custom Overrides for Dark Mode */
+.leaflet-container {
+  background-color: #0d1117 !important;
+  font-family: 'DM Sans', sans-serif;
+}
+.leaflet-tile-pane {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  @apply bg-surface text-white border border-white/10 rounded-xl shadow-2xl;
+}
+.leaflet-popup-content {
+  color: white !important;
+  margin: 14px 16px !important;
+}
+.leaflet-container a.leaflet-popup-close-button {
+  color: white !important;
+  opacity: 0.6;
+  padding: 8px !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+.leaflet-container a.leaflet-popup-close-button:hover {
+  opacity: 1;
+}
