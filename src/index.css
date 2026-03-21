@@ -48,3 +48,44 @@
 .leaflet-container a.leaflet-popup-close-button:hover {
   opacity: 1;
 }
+
+/* User Location Marker */
+.user-location-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-circle {
+  width: 14px;
+  height: 14px;
+  background: #3b82f6;
+  border: 2px solid white;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: rgba(59, 130, 246, 0.4);
+  border-radius: 50%;
+  animation: pulse-blue 2s infinite;
+}
+
+@keyframes pulse-blue {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.locate-me-btn {
+  @apply bg-surface/90 hover:bg-surface text-white p-3 rounded-full shadow-2xl border border-white/20 transition-all hover:scale-110 active:scale-95;
+}

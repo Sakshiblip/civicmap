@@ -18,9 +18,12 @@ export default function UserDashboard() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     loadIssues();
+    handleGeolocation();
 
     // Listen for realtime updates to all issues
     const channel = supabase.channel('user-issues-all-channel')
@@ -43,6 +46,27 @@ export default function UserDashboard() {
       supabase.removeChannel(channel);
     };
   }, [user?.email]);
+
+  const handleGeolocation = () => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation([latitude, longitude]);
+        setFlyTo([latitude, longitude]);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        if (error.code === error.PERMISSION_DENIED) {
+          setToast('Location access denied — defaulting to Mumbai');
+          setTimeout(() => setToast(null), 4000);
+        }
+        // Fallback to Mumbai (MapComponent default center is Mumbai, but we can set flyTo)
+        setFlyTo([19.0760, 72.8777]);
+      }
+    );
+  };
 
   const loadIssues = async () => {
     // We want to load ALL issues now so the map shows everything
@@ -135,8 +159,19 @@ export default function UserDashboard() {
         onMapClick={handleMapClick}
         draftPin={draftLocation}
         selectedLocation={flyTo}
+        userLocation={userLocation}
         currentUserId={user?.id}
       />
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[2000] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-surface/90 backdrop-blur-md border border-white/10 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-white">
+            <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+            <p className="text-sm font-medium">{toast}</p>
+          </div>
+        </div>
+      )}
 
       {/* Glassmorphism Sidebar (Left) */}
       <div className="w-full md:w-[400px] h-full z-10 glass flex flex-col shadow-2xl transition-all duration-300 transform translate-x-0 absolute md:relative">
