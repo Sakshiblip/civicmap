@@ -22,7 +22,7 @@ export default function Auth() {
     setErrorMsg('');
     setSuccessMsg('');
     setShowResend(false);
-    
+
     try {
       if (isForgotPassword) {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -40,14 +40,14 @@ export default function Auth() {
           }
           throw error;
         }
-        
+
         // Immediately query admin_emails fresh after session confirmation
         const { data: adminData } = await supabase
           .from('admin_emails')
           .select('*')
           .eq('email', email)
           .single();
-          
+
         if (adminData) {
           navigate('/admin');
         } else {
@@ -56,12 +56,12 @@ export default function Auth() {
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        
+
         if (data?.user?.identities && data.user.identities.length === 0) {
           setErrorMsg('An account with this email already exists. Please sign in.');
           return;
         }
-        
+
         setErrorMsg('If account created, you might be logged in. If you have email confirmations enabled, please check your email.');
       }
     } catch (error: any) {
@@ -92,9 +92,9 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       {/* Abstract Map Background Simulation */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(circle at 20% 40%, rgba(0, 212, 170, 0.4) 0%, transparent 40%), radial-gradient(circle at 80% 60%, rgba(16, 185, 129, 0.4) 0%, transparent 40%)' }} />
-      
+      <div className="absolute inset-0 opacity-10 pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(circle at 20% 40%, rgba(0, 212, 170, 0.4) 0%, transparent 40%), radial-gradient(circle at 80% 60%, rgba(16, 185, 129, 0.4) 0%, transparent 40%)' }} />
+
       <div className="glass-card w-full max-w-md p-8 relative z-10 animate-drop">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 rounded-xl bg-accent/20 flex flex-center items-center justify-center border border-accent/50">
@@ -109,8 +109,8 @@ export default function Auth() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-white/80 uppercase tracking-widest text-xs">Email Address</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-surface border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors font-mono"
@@ -118,12 +118,12 @@ export default function Auth() {
               required
             />
           </div>
-          
+
           {!isForgotPassword && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/80 uppercase tracking-widest text-xs">Password</label>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-surface border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors font-mono"
@@ -133,7 +133,7 @@ export default function Auth() {
               />
               {isLogin && (
                 <div className="text-right">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => { setIsForgotPassword(true); setErrorMsg(''); setSuccessMsg(''); setShowResend(false); }}
                     className="text-xs text-accent hover:underline"
@@ -149,8 +149,8 @@ export default function Auth() {
             <div className={`text-sm font-mono p-3 rounded border ${showResend || errorMsg.toLowerCase().includes('already exists') || errorMsg.includes('Invalid') ? 'text-red-400 bg-red-400/10 border-red-400/20' : 'text-accent bg-accent/10 border-accent/20'}`}>
               <p>{errorMsg}</p>
               {showResend && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={handleResend}
                   disabled={isSubmitting}
                   className="mt-3 w-full bg-red-400/20 hover:bg-red-400/30 text-white py-2 rounded transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
@@ -167,8 +167,8 @@ export default function Auth() {
             </div>
           )}
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isSubmitting}
             className="w-full bg-accent hover:bg-accent/80 text-background font-bold py-3 px-4 rounded-lg flex flex-center items-center justify-center gap-2 transition-all disabled:opacity-50"
           >
@@ -181,16 +181,16 @@ export default function Auth() {
 
         <div className="mt-8 text-center border-t border-white/10 pt-6 text-sm text-white/60 flex flex-col gap-2">
           {isForgotPassword ? (
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => { setIsForgotPassword(false); setErrorMsg(''); setSuccessMsg(''); }}
               className="hover:text-accent font-bold transition-colors"
             >
               Back to Sign In
             </button>
           ) : (
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => { setIsLogin(!isLogin); setErrorMsg(''); setSuccessMsg(''); setShowResend(false); }}
               className="hover:text-accent font-bold transition-colors"
             >
