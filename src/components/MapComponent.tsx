@@ -35,8 +35,10 @@ const icons = {
 
 // Component to handle map clicks
 function MapEvents({ onMapClick }: { onMapClick?: (lat: number, lng: number) => void }) {
+  const map = useMap();
   useMapEvents({
     click(e: L.LeafletMouseEvent) {
+      map.closePopup();
       if (onMapClick) {
         onMapClick(e.latlng.lat, e.latlng.lng);
       }
@@ -92,6 +94,16 @@ export default function MapComponent({
   const defaultCenter: [number, number] = [19.0760, 72.8777]; // Mumbai
   const [statusFilter, setStatusFilter] = useState<'all' | IssueStatus>('all');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = windowWidth < 640;
+  const popupWidth = isMobile ? Math.floor(windowWidth * 0.85) : 320;
 
   const types = ['All', 'Garbage Disposal', 'Pothole', 'Street Light', 'Flooding', 'Graffiti', 'Other'];
 
@@ -163,12 +175,13 @@ export default function MapComponent({
           </div>
         )}
         
-        {interactive && onMapClick && <MapEvents onMapClick={onMapClick} />}
+        {/* Render MapEvents unconditionally to handle popup closing on tap */}
+        <MapEvents onMapClick={interactive ? onMapClick : undefined} />
         {selectedLocation && <FlyToLocation center={selectedLocation} zoom={userLocation && selectedLocation[0] === userLocation[0] && selectedLocation[1] === userLocation[1] ? 15 : 16} />}
 
         {userLocation && (
           <Marker position={userLocation} icon={userLocationIcon}>
-            <Popup className="custom-popup">
+            <Popup className="custom-popup" minWidth={popupWidth} maxWidth={popupWidth}>
               <div className="p-1 font-body text-sm font-bold text-accent">You are here</div>
             </Popup>
           </Marker>
@@ -176,7 +189,7 @@ export default function MapComponent({
 
         {draftPin && (
           <Marker position={draftPin} icon={icons.pending}>
-            <Popup className="custom-popup">
+            <Popup className="custom-popup" minWidth={popupWidth} maxWidth={popupWidth}>
               <div className="p-1 font-body text-sm font-bold">New Issue Location</div>
             </Popup>
           </Marker>
@@ -188,7 +201,7 @@ export default function MapComponent({
             position={[issue.lat, issue.lng]} 
             icon={icons[issue.status]}
           >
-            <Popup className="custom-popup min-w-[200px]">
+            <Popup className="custom-popup" minWidth={popupWidth} maxWidth={popupWidth}>
               <div className="p-1 text-white">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`px-2 py-0.5 rounded text-xs font-bold text-white uppercase tracking-wider

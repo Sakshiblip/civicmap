@@ -74,8 +74,11 @@
 }
 
 .leaflet-container a.leaflet-popup-close-button {
-  color: var(--text-color) !important;
-  opacity: 0.8;
+  color: #ffffff !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 50% !important;
+  opacity: 1 !important;
   padding: 0 !important;
   width: 44px !important;
   height: 44px !important;
@@ -83,10 +86,28 @@
   align-items: center !important;
   justify-content: center !important;
   font-size: 24px !important;
+  font-weight: bold !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 1000 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+  transition: all 0.2s ease !important;
 }
+
+.light .leaflet-container a.leaflet-popup-close-button {
+  color: #0d1117 !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
 .leaflet-container a.leaflet-popup-close-button:hover {
-  opacity: 1;
-  background: rgba(255,255,255,0.1);
+  transform: scale(1.05) !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.light .leaflet-container a.leaflet-popup-close-button:hover {
+  background-color: #ffffff !important;
 }
 
 /* User Location Marker */
