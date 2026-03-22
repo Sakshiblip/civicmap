@@ -169,19 +169,19 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-surface border-b border-white/5 z-20">
         <div className="glass-card p-2 md:p-3 flex flex-col items-center justify-center border border-white/5">
           <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-0.5 font-mono">Total Issues</span>
-          <span className="text-xl font-bold font-heading text-white">{stats.total}</span>
+          <span className="text-xl font-bold font-heading text-white" style={{ textShadow: '0 0 10px rgba(255,255,255,0.8)' }}>{stats.total}</span>
         </div>
         <div className="glass-card p-2 md:p-3 flex flex-col items-center justify-center border border-pending/20 bg-pending/5">
           <span className="text-[9px] font-bold text-pending uppercase tracking-widest mb-0.5 font-mono">Pending</span>
-          <span className="text-xl font-bold font-heading text-pending">{stats.pending}</span>
+          <span className="text-xl font-bold font-heading text-pending" style={{ textShadow: '0 0 10px rgba(239,68,68,0.9)' }}>{stats.pending}</span>
         </div>
         <div className="glass-card p-2 md:p-3 flex flex-col items-center justify-center border-inprogress/20 bg-inprogress/5 border">
           <span className="text-[9px] font-bold text-inprogress uppercase tracking-widest mb-0.5 font-mono">In Progress</span>
-          <span className="text-xl font-bold font-heading text-inprogress">{stats.inProgress}</span>
+          <span className="text-xl font-bold font-heading text-inprogress" style={{ textShadow: '0 0 10px rgba(245,158,11,0.9)' }}>{stats.inProgress}</span>
         </div>
         <div className="glass-card p-2 md:p-3 flex flex-col items-center justify-center border-resolved/20 bg-resolved/5 border">
           <span className="text-[9px] font-bold text-resolved uppercase tracking-widest mb-0.5 font-mono">Resolved</span>
-          <span className="text-xl font-bold font-heading text-resolved">{stats.resolved}</span>
+          <span className="text-xl font-bold font-heading text-resolved" style={{ textShadow: '0 0 10px rgba(16,185,129,0.9)' }}>{stats.resolved}</span>
         </div>
       </div>
 
