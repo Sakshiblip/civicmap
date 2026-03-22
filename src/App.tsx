@@ -1,6 +1,7 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
+import { supabase } from './lib/supabase';
 import Auth from './components/Auth';
 import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
@@ -19,28 +20,39 @@ function ProtectedRoute({ children, reqRole }: { children: React.ReactNode, reqR
 
 function AppRouter() {
   const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   if (isLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center text-accent">Loading...</div>;
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <Auth />} />
-        <Route path="/reset-password" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <ResetPassword />} />
-        <Route path="/dashboard" element={<ProtectedRoute reqRole="user"><UserDashboard /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute reqRole="admin"><AdminDashboard /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/dashboard" element={<ProtectedRoute reqRole="user"><UserDashboard /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute reqRole="admin"><AdminDashboard /></ProtectedRoute>} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   );
 }
 
 function App() {
   return (
     <AuthProvider>
-      <AppRouter />
+      <BrowserRouter>
+        <AppRouter />
+      </BrowserRouter>
     </AuthProvider>
   );
 }
