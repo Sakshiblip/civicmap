@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Issue } from '../lib/supabase';
 import MapComponent from './MapComponent';
-import { LogOut, PlusCircle, List, MapPin, Image as ImageIcon, Send, Navigation, Clock, CheckCircle, ArrowRight } from 'lucide-react';
+import { LogOut, PlusCircle, List, MapPin, Image as ImageIcon, Send, Navigation, Clock, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function UserDashboard() {
@@ -16,10 +16,14 @@ export default function UserDashboard() {
   const [issueType, setIssueType] = useState('Pothole');
   const [description, setDescription] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const objectUrlsRef = React.useRef<string[]>([]);
 
   useEffect(() => {
     loadIssues();
@@ -47,6 +51,8 @@ export default function UserDashboard() {
       if (typeof watchId === 'number') {
         navigator.geolocation.clearWatch(watchId);
       }
+      // Cleanup preview URLs on unmount
+      objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, [user?.email]);
 
@@ -63,8 +69,8 @@ export default function UserDashboard() {
       (error) => {
         console.error('Geolocation error:', error);
         if (error.code === error.PERMISSION_DENIED) {
-          setToast('Location access denied — defaulting to Mumbai');
-          setTimeout(() => setToast(null), 4000);
+        setToast({ message: 'Location access denied — defaulting to Mumbai', type: 'info' });
+        setTimeout(() => setToast(null), 4000);
         }
         // Fallback to Mumbai if we don't have a location yet
         setFlyTo(prev => prev ? prev : [19.0760, 72.8777]);
@@ -74,6 +80,7 @@ export default function UserDashboard() {
   };
 
   const loadIssues = async () => {
+    setIsLoading(true);
     // We want to load ALL issues now so the map shows everything
     const { data, error } = await supabase
       .from('issues')
@@ -83,6 +90,7 @@ export default function UserDashboard() {
     if (data && !error) {
       setIssues(data as Issue[]);
     }
+    setIsLoading(false);
   };
 
   const handleMapClick = (lat: number, lng: number) => {
@@ -92,34 +100,24 @@ export default function UserDashboard() {
   };
 
   const handleImageDemo = () => {
-    // Instead of doing file upload UI logic directly, we just open a mock input or we use the demo images to simulate selecting images.
-    // The prompt says: "Retrofit the existing demo image button to actually fetch a blob and upload it to Supabase Storage, or convert the button to a file input."
-    // Let's create an invisible file input and trigger it.
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    input.multiple = true;
     input.onchange = async (e: any) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+      const files = Array.from(e.target.files as FileList);
+      if (files.length === 0) return;
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${user?.id}/${fileName}`;
+      // Add to selected files
+      setSelectedFiles(prev => [...prev, ...files]);
 
-      const { error: uploadError } = await supabase.storage
-        .from('issue-images')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        alert(uploadError.message);
-        return;
-      }
-
-      const { data } = supabase.storage
-        .from('issue-images')
-        .getPublicUrl(filePath);
-
-      setImageUrls((prev) => [...prev, data.publicUrl]);
+      // Create preview URLs
+      const newPreviews = files.map(file => {
+        const url = URL.createObjectURL(file);
+        objectUrlsRef.current.push(url);
+        return url;
+      });
+      setImageUrls(prev => [...prev, ...newPreviews]);
     };
     input.click();
   };
@@ -129,6 +127,45 @@ export default function UserDashboard() {
     if (!draftLocation || !user) return;
 
     setIsSubmitting(true);
+    setUploadProgress(0);
+
+    const uploadedUrls: string[] = [];
+
+    // Upload files if any
+    if (selectedFiles.length > 0) {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('issue-images')
+          .upload(filePath, file, {
+            onUploadProgress: (progress) => {
+              const currentFileProgress = (progress.loaded / progress.total) * 100;
+              const overallProgress = ((i / selectedFiles.length) * 100) + (currentFileProgress / selectedFiles.length);
+              setUploadProgress(Math.round(overallProgress));
+            }
+          });
+
+        if (uploadError) {
+          alert('Failed to upload image: ' + uploadError.message);
+          setIsSubmitting(false);
+          setUploadProgress(null);
+          return;
+        }
+
+        const { data } = supabase.storage
+          .from('issue-images')
+          .getPublicUrl(filePath);
+        
+        uploadedUrls.push(data.publicUrl);
+      }
+    }
+
+    setUploadProgress(null);
+
     const { data, error } = await supabase.from('issues').insert({
       user_id: user.id,
       email: user.email,
@@ -136,7 +173,7 @@ export default function UserDashboard() {
       lng: draftLocation[1],
       issue_type: issueType,
       description,
-      image_urls: imageUrls,
+      image_urls: uploadedUrls,
       status: 'pending'
     }).select().single();
 
@@ -144,12 +181,20 @@ export default function UserDashboard() {
       alert(error.message);
     } else if (data) {
       setIssues((prev) => [data as Issue, ...prev]);
+      setToast({ message: 'Issue reported successfully!', type: 'success' });
+      setTimeout(() => setToast(null), 5000);
+      
+      // Cleanup preview URLs
+      objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      objectUrlsRef.current = [];
     }
 
     // Reset form
     setDraftLocation(null);
+    setIssueType('Pothole');
     setDescription('');
     setImageUrls([]);
+    setSelectedFiles([]);
     setIsSubmitting(false);
     setActiveTab('list');
   };
@@ -173,9 +218,13 @@ export default function UserDashboard() {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[2000] animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-surface/90 backdrop-blur-md border border-white/10 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-white">
-            <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-            <p className="text-sm font-medium">{toast}</p>
+          <div className={`${toast.type === 'success' ? 'toast-success' : 'bg-surface/90'} backdrop-blur-md border border-white/10 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-white`}>
+            {toast.type === 'success' ? (
+              <CheckCircle size={18} className="text-white" />
+            ) : (
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+            )}
+            <p className="text-sm font-medium">{toast.message}</p>
           </div>
         </div>
       )}
@@ -292,7 +341,15 @@ export default function UserDashboard() {
                           <img src={url} alt="Upload preview" className="w-full h-full object-cover" />
                           <button
                             type="button"
-                            onClick={() => setImageUrls(imageUrls.filter((_, idx) => idx !== i))}
+                            onClick={() => {
+                              const newFiles = [...selectedFiles];
+                              newFiles.splice(i, 1);
+                              setSelectedFiles(newFiles);
+                              const newUrls = [...imageUrls];
+                              URL.revokeObjectURL(newUrls[i]);
+                              newUrls.splice(i, 1);
+                              setImageUrls(newUrls);
+                            }}
                             className="absolute inset-0 bg-red-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
                           >
                             <LogOut size={16} className="transform rotate-45" />
@@ -311,14 +368,32 @@ export default function UserDashboard() {
                   )}
                 </div>
 
-                <div className="pt-4 pb-8">
+                <div className="pt-4 pb-8 space-y-4">
+                  {uploadProgress !== null && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="flex justify-between text-xs font-bold text-accent uppercase tracking-wider font-mono">
+                        <span>Uploading images...</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden border border-white/10">
+                        <div 
+                          className="bg-accent h-full transition-all duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
                     disabled={!draftLocation || !description || isSubmitting}
                     className="w-full bg-accent hover:bg-accent/80 text-background font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent/20"
                   >
                     {isSubmitting ? (
-                      <span className="animate-pulse">Submitting...</span>
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Submitting...
+                      </>
                     ) : (
                       <>
                         <Send size={18} />
@@ -387,6 +462,16 @@ export default function UserDashboard() {
             </div>
           )}
         </div>
+        
+        {/* Loading Overlay */}
+        {isLoading && (
+          <div className="absolute inset-x-0 top-0 bottom-0 z-[100] bg-background/40 backdrop-blur-[2px] flex items-center justify-center">
+            <div className="glass-card px-6 py-4 flex items-center gap-3 border border-white/10 shadow-2xl">
+              <Loader2 className="text-accent animate-spin" size={20} />
+              <span className="font-bold text-sm text-white/80 uppercase tracking-widest font-mono">Fetching Issues...</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

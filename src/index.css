@@ -98,3 +98,8 @@
 .locate-me-btn {
   @apply bg-surface/90 hover:bg-surface text-white p-3 rounded-full shadow-2xl border border-white/20 transition-all hover:scale-110 active:scale-95;
 }
+
+/* Success Toast */
+.toast-success {
+  @apply bg-emerald-500/90 border-emerald-400/20 text-white shadow-emerald-500/20;
+}

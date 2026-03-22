@@ -3,7 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Issue, IssueStatus } from '../lib/supabase';
 import MapComponent from './MapComponent';
-import { LogOut, Filter, Clock, CheckCircle, Navigation, LayoutDashboard } from 'lucide-react';
+import { LogOut, Filter, Clock, CheckCircle, Navigation, LayoutDashboard, Loader2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function AdminDashboard() {
@@ -14,6 +14,8 @@ export default function AdminDashboard() {
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const [activeTab, setActiveTab] = useState<'issues' | 'logins'>('issues');
   const [loginLogs, setLoginLogs] = useState<any[]>([]);
+  const [isLoadingIssues, setIsLoadingIssues] = useState(true);
+  const [isLoadingLogins, setIsLoadingLogins] = useState(true);
 
   useEffect(() => {
     loadIssues();
@@ -58,13 +60,16 @@ export default function AdminDashboard() {
   }, []);
 
   const loadIssues = async () => {
+    setIsLoadingIssues(true);
     const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false });
     if (data) {
       setIssues(data as Issue[]);
     }
+    setIsLoadingIssues(false);
   };
 
   const loadLoginLogs = async () => {
+    setIsLoadingLogins(true);
     const { data } = await supabase
       .from('login_logs')
       .select('*')
@@ -73,12 +78,25 @@ export default function AdminDashboard() {
     if (data) {
       setLoginLogs(data);
     }
+    setIsLoadingLogins(false);
   };
 
   const handleStatusChange = async (id: string, newStatus: IssueStatus) => {
     // Optimistic update
     setIssues(prev => prev.map(issue => issue.id === id ? { ...issue, status: newStatus } : issue));
     await supabase.from('issues').update({ status: newStatus }).eq('id', id);
+  };
+
+  const handleDeleteIssue = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this issue? This cannot be undone.')) {
+      return;
+    }
+
+    const { error } = await supabase.from('issues').delete().eq('id', id);
+    if (error) {
+      alert('Failed to delete issue: ' + error.message);
+    }
+    // Note: The UI updates automatically via the real-time subscription
   };
 
   const filteredIssues = issues.filter(issue => {
@@ -89,11 +107,40 @@ export default function AdminDashboard() {
 
   const types = ['All', 'Garbage Disposal', 'Pothole', 'Street Light', 'Flooding', 'Graffiti', 'Other'];
 
+  const stats = {
+    total: issues.length,
+    pending: issues.filter(i => i.status === 'pending').length,
+    inProgress: issues.filter(i => i.status === 'in_progress').length,
+    resolved: issues.filter(i => i.status === 'resolved').length,
+  };
+
   return (
-    <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
+    <div className="flex flex-col h-screen w-full relative overflow-hidden bg-background">
+      
+      {/* Stats Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface border-b border-white/5 z-20">
+        <div className="glass-card p-4 flex flex-col items-center justify-center border border-white/5">
+          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 font-mono">Total Issues</span>
+          <span className="text-2xl font-bold font-heading text-white">{stats.total}</span>
+        </div>
+        <div className="glass-card p-4 flex flex-col items-center justify-center border border-pending/20 bg-pending/5">
+          <span className="text-[10px] font-bold text-pending uppercase tracking-widest mb-1 font-mono">Pending</span>
+          <span className="text-2xl font-bold font-heading text-pending">{stats.pending}</span>
+        </div>
+        <div className="glass-card p-4 flex flex-col items-center justify-center border-inprogress/20 bg-inprogress/5">
+          <span className="text-[10px] font-bold text-inprogress uppercase tracking-widest mb-1 font-mono">In Progress</span>
+          <span className="text-2xl font-bold font-heading text-inprogress">{stats.inProgress}</span>
+        </div>
+        <div className="glass-card p-4 flex flex-col items-center justify-center border-resolved/20 bg-resolved/5">
+          <span className="text-[10px] font-bold text-resolved uppercase tracking-widest mb-1 font-mono">Resolved</span>
+          <span className="text-2xl font-bold font-heading text-resolved">{stats.resolved}</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row flex-1 relative overflow-hidden">
       
       {/* Map Area */}
-      <div className="flex-1 relative order-1 md:order-2 h-[50vh] md:h-full">
+      <div className="flex-1 relative order-1 md:order-2 h-[40vh] md:h-full">
         <MapComponent 
           issues={issues} 
           interactive={true}
@@ -114,7 +161,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Feed Panel */}
-      <div className="w-full md:w-[500px] h-[50vh] md:h-full z-10 glass flex flex-col shadow-2xl order-2 md:order-1 border-l border-white/5 bg-surface/95 block shrink-0">
+      <div className="w-full md:w-[500px] h-[60vh] md:h-full z-10 glass flex flex-col shadow-2xl order-2 md:order-1 border-l border-white/5 bg-surface/95 block shrink-0">
         
         {/* Header Options */}
         <div className="p-6 border-b border-white/10 flex justify-between items-center">
@@ -198,8 +245,15 @@ export default function AdminDashboard() {
         {/* Content List */}
         <div className="flex-1 overflow-y-auto styled-scrollbar p-0">
           {activeTab === 'issues' ? (
-            <div className="p-4 space-y-4">
-              {filteredIssues.length === 0 ? (
+            <div className="p-4 space-y-4 relative min-h-[200px]">
+              {isLoadingIssues ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-surface/50 backdrop-blur-[1px] z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="text-accent animate-spin" size={24} />
+                    <span className="text-xs font-mono text-white/40 uppercase tracking-widest">Loading Issues...</span>
+                  </div>
+                </div>
+              ) : filteredIssues.length === 0 ? (
                 <div className="text-center py-20 text-white/30 font-body">
                   <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>No issues matching filters.</p>
@@ -218,8 +272,8 @@ export default function AdminDashboard() {
                         <span className="font-bold font-heading text-white">{issue.issue_type}</span>
                       </div>
                       
-                      {/* Status Dropdown - Stop Propagation so it doesn't trigger map fly */}
-                      <div onClick={(e) => e.stopPropagation()}>
+                      {/* Actions */}
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <select
                           value={issue.status}
                           onChange={(e) => handleStatusChange(issue.id, e.target.value as IssueStatus)}
@@ -233,6 +287,14 @@ export default function AdminDashboard() {
                           <option value="in_progress">IN PROGRESS</option>
                           <option value="resolved">RESOLVED</option>
                         </select>
+
+                        <button
+                          onClick={() => handleDeleteIssue(issue.id)}
+                          className="p-2 text-white/40 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                          title="Delete Issue"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
 
@@ -277,7 +339,15 @@ export default function AdminDashboard() {
               )}
             </div>
           ) : (
-            <div className="p-0">
+            <div className="p-0 relative min-h-[200px]">
+              {isLoadingLogins && (
+                <div className="absolute inset-0 flex items-center justify-center bg-surface/50 backdrop-blur-[1px] z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="text-accent animate-spin" size={24} />
+                    <span className="text-xs font-mono text-white/40 uppercase tracking-widest">Loading Activity...</span>
+                  </div>
+                </div>
+              )}
               <table className="w-full text-left border-collapse">
                 <thead className="bg-white/5 text-[10px] uppercase tracking-widest text-white/40 font-mono">
                   <tr>
@@ -302,7 +372,7 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
-                  {loginLogs.length === 0 && (
+                  {loginLogs.length === 0 && !isLoadingLogins && (
                     <tr>
                       <td colSpan={3} className="px-4 py-20 text-center text-white/30 font-body">
                         No login activity recorded yet.
@@ -314,6 +384,7 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

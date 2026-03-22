@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { MapPin, ArrowRight, Mail, Eye, EyeOff } from 'lucide-react';
+import { MapPin, ArrowRight, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Auth() {
@@ -193,10 +193,17 @@ export default function Auth() {
             disabled={isSubmitting}
             className="w-full bg-accent hover:bg-accent/80 text-background font-bold py-4 px-4 rounded-lg flex flex-center items-center justify-center gap-2 transition-all disabled:opacity-50 text-lg"
           >
-            {isSubmitting ? 'Processing...' : (
-              isForgotPassword ? 'Send Reset Link' : (isLogin ? 'Sign In' : 'Sign Up')
+            {isSubmitting ? (
+              <>
+                <Loader2 className="animate-spin w-5 h-5" />
+                {isForgotPassword ? 'Sending...' : (isLogin ? 'Signing In...' : 'Signing Up...')}
+              </>
+            ) : (
+              <>
+                {isForgotPassword ? 'Send Reset Link' : (isLogin ? 'Sign In' : 'Sign Up')}
+                <ArrowRight className="w-5 h-5" />
+              </>
             )}
-            {!isSubmitting && <ArrowRight className="w-5 h-5" />}
           </button>
         </form>
 
