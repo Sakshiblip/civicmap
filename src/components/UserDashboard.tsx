@@ -142,12 +142,12 @@ export default function UserDashboard() {
         const { error: uploadError } = await supabase.storage
           .from('issue-images')
           .upload(filePath, file, {
-            onUploadProgress: (progress) => {
+            onUploadProgress: (progress: any) => {
               const currentFileProgress = (progress.loaded / progress.total) * 100;
               const overallProgress = ((i / selectedFiles.length) * 100) + (currentFileProgress / selectedFiles.length);
               setUploadProgress(Math.round(overallProgress));
             }
-          });
+          } as any);
 
         if (uploadError) {
           alert('Failed to upload image: ' + uploadError.message);
