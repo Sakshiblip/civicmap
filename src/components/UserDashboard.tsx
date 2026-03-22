@@ -3,6 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Issue } from '../lib/supabase';
 import MapComponent from './MapComponent';
+import ThemeToggle from './ThemeToggle';
 import { LogOut, PlusCircle, List, MapPin, Image as ImageIcon, Send, Navigation, Clock, CheckCircle, ArrowRight, Loader2, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -10,6 +11,23 @@ export default function UserDashboard() {
   const { user, logout } = useAuth();
   const [issues, setIssues] = useState<Issue[]>([]);
   const [activeTab, setActiveTab] = useState<'submit' | 'list'>('submit');
+
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') !== 'light';
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (!isDark) {
+      document.documentElement.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.remove('light');
+      localStorage.setItem('theme', 'dark');
+    }
+  }, [isDark]);
 
   // Submission Form State
   const [draftLocation, setDraftLocation] = useState<[number, number] | null>(null);
@@ -270,9 +288,12 @@ export default function UserDashboard() {
             </h1>
             <p className="font-mono text-xs text-white/50 truncate mt-1">{user?.email}</p>
           </div>
-          <button onClick={logout} className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-red-400" title="Logout">
-            <LogOut size={20} />
-          </button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+            <button onClick={logout} className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-red-400" title="Logout">
+              <LogOut size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}

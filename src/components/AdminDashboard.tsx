@@ -19,6 +19,23 @@ export default function AdminDashboard() {
   const [isLoadingLogins, setIsLoadingLogins] = useState(true);
   const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' } | null>(null);
 
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') !== 'light';
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (!isDark) {
+      document.documentElement.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.remove('light');
+      localStorage.setItem('theme', 'dark');
+    }
+  }, [isDark]);
+
   useEffect(() => {
     loadIssues();
     
@@ -224,7 +241,7 @@ export default function AdminDashboard() {
               <Download size={14} />
               <span className="hidden sm:inline">Export CSV</span>
             </button>
-            <ThemeToggle />
+            <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
             <button onClick={logout} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/50 hover:text-red-400" title="Logout">
               <LogOut size={16} />
             </button>
