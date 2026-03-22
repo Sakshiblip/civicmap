@@ -3,7 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Issue, IssueStatus } from '../lib/supabase';
 import MapComponent from './MapComponent';
-import { LogOut, Filter, Clock, CheckCircle, Navigation, LayoutDashboard, Loader2, Trash2, Download } from 'lucide-react';
+import { LogOut, Clock, CheckCircle, Navigation, Loader2, Trash2, Download } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function AdminDashboard() {
@@ -166,22 +166,22 @@ export default function AdminDashboard() {
     <div className="flex flex-col h-screen w-full relative overflow-hidden bg-background">
       
       {/* Stats Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface border-b border-white/5 z-20">
-        <div className="glass-card p-4 flex flex-col items-center justify-center border border-white/5">
-          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 font-mono">Total Issues</span>
-          <span className="text-2xl font-bold font-heading text-white">{stats.total}</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-surface border-b border-white/5 z-20">
+        <div className="glass-card p-2 md:p-3 flex flex-col items-center justify-center border border-white/5">
+          <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-0.5 font-mono">Total Issues</span>
+          <span className="text-xl font-bold font-heading text-white">{stats.total}</span>
         </div>
-        <div className="glass-card p-4 flex flex-col items-center justify-center border border-pending/20 bg-pending/5">
-          <span className="text-[10px] font-bold text-pending uppercase tracking-widest mb-1 font-mono">Pending</span>
-          <span className="text-2xl font-bold font-heading text-pending">{stats.pending}</span>
+        <div className="glass-card p-2 md:p-3 flex flex-col items-center justify-center border border-pending/20 bg-pending/5">
+          <span className="text-[9px] font-bold text-pending uppercase tracking-widest mb-0.5 font-mono">Pending</span>
+          <span className="text-xl font-bold font-heading text-pending">{stats.pending}</span>
         </div>
-        <div className="glass-card p-4 flex flex-col items-center justify-center border-inprogress/20 bg-inprogress/5">
-          <span className="text-[10px] font-bold text-inprogress uppercase tracking-widest mb-1 font-mono">In Progress</span>
-          <span className="text-2xl font-bold font-heading text-inprogress">{stats.inProgress}</span>
+        <div className="glass-card p-2 md:p-3 flex flex-col items-center justify-center border-inprogress/20 bg-inprogress/5 border">
+          <span className="text-[9px] font-bold text-inprogress uppercase tracking-widest mb-0.5 font-mono">In Progress</span>
+          <span className="text-xl font-bold font-heading text-inprogress">{stats.inProgress}</span>
         </div>
-        <div className="glass-card p-4 flex flex-col items-center justify-center border-resolved/20 bg-resolved/5">
-          <span className="text-[10px] font-bold text-resolved uppercase tracking-widest mb-1 font-mono">Resolved</span>
-          <span className="text-2xl font-bold font-heading text-resolved">{stats.resolved}</span>
+        <div className="glass-card p-2 md:p-3 flex flex-col items-center justify-center border-resolved/20 bg-resolved/5 border">
+          <span className="text-[9px] font-bold text-resolved uppercase tracking-widest mb-0.5 font-mono">Resolved</span>
+          <span className="text-xl font-bold font-heading text-resolved">{stats.resolved}</span>
         </div>
       </div>
 
@@ -194,25 +194,17 @@ export default function AdminDashboard() {
           interactive={true}
           selectedLocation={flyTo}
           isAdmin={true}
+          showFilters={true}
+          compactFilters={true}
         />
         
-        {/* Floating Admin Header on Map */}
-        <div className="absolute top-6 left-6 z-10 glass-card px-6 py-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-accent/20 flex flex-center items-center justify-center border border-accent/50">
-            <LayoutDashboard className="text-accent w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="font-heading font-bold text-xl text-white">Administration</h1>
-            <p className="font-mono text-xs text-accent">Real-time Command Center</p>
-          </div>
-        </div>
       </div>
 
       {/* Feed Panel */}
-      <div className="w-full md:w-[500px] h-[60vh] md:h-full z-10 glass flex flex-col shadow-2xl order-2 md:order-1 border-l border-white/5 bg-surface/95 block shrink-0">
+      <div className="w-full md:w-[380px] h-[60vh] md:h-full z-10 glass flex flex-col shadow-2xl order-2 md:order-1 border-l border-white/5 bg-surface/95 block shrink-0">
         
         {/* Header Options */}
-        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+        <div className="p-4 border-b border-white/5 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <button
               onClick={handleExportCSV}
@@ -222,14 +214,37 @@ export default function AdminDashboard() {
               <Download size={14} />
               <span className="hidden sm:inline">Export CSV</span>
             </button>
-            <button onClick={logout} className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-red-400" title="Logout">
-              <LogOut size={18} />
+            <button onClick={logout} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/50 hover:text-red-400" title="Logout">
+              <LogOut size={16} />
             </button>
           </div>
         </div>
 
         {/* Tabs and Filters */}
         <div className="p-4 border-b border-white/10 space-y-4">
+          <div className="flex gap-2">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="flex-1 bg-surface/50 border border-white/5 rounded-lg py-2 px-3 text-white/80 text-xs focus:outline-none focus:border-accent appearance-none font-mono"
+            >
+              <option value="all">STATUS: ALL</option>
+              <option value="pending">PENDING</option>
+              <option value="in_progress">IN PROGRESS</option>
+              <option value="resolved">RESOLVED</option>
+            </select>
+            
+            <select 
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="flex-1 bg-surface/50 border border-white/5 rounded-lg py-2 px-3 text-white/80 text-xs focus:outline-none focus:border-accent appearance-none font-mono"
+            >
+              {types.map(t => <option key={t} value={t}>{t === 'All' ? 'TYPE: ALL' : t.toUpperCase()}</option>)}
+            </select>
+          </div>
+
+          <div className="h-[1px] bg-white/5 w-full" />
+
           <div className="flex gap-2 mb-4">
             <button
               onClick={() => setActiveTab('issues')}
@@ -249,39 +264,6 @@ export default function AdminDashboard() {
             </button>
           </div>
 
-          {activeTab === 'issues' && (
-            <>
-              <div className="flex items-center justify-between text-sm">
-                <h3 className="font-bold text-white/80 uppercase tracking-widest text-xs flex items-center gap-2">
-                  <Filter size={14} /> LIVE Triage Feed
-                </h3>
-                <span className="text-accent font-mono bg-accent/10 px-2 py-1 rounded">
-                  {filteredIssues.length} Results
-                </span>
-              </div>
-
-              <div className="flex gap-2">
-                <select 
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="flex-1 bg-surface border border-white/10 rounded-lg py-3 px-3 text-white text-base focus:outline-none focus:border-accent appearance-none font-body"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                </select>
-                
-                <select 
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="flex-1 bg-surface border border-white/10 rounded-lg py-3 px-3 text-white text-base focus:outline-none focus:border-accent appearance-none font-body"
-                >
-                  {types.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-            </>
-          )}
 
           {activeTab === 'logins' && (
             <div className="flex items-center justify-between text-sm">
@@ -316,7 +298,7 @@ export default function AdminDashboard() {
                   <div 
                     key={issue.id}
                     onClick={() => setFlyTo([issue.lat, issue.lng])}
-                    className="bg-surface border border-white/5 hover:border-accent/30 rounded-xl p-4 transition-all cursor-pointer group"
+                    className="bg-surface/40 border border-white/5 hover:border-accent/30 rounded-xl p-2 transition-all cursor-pointer group"
                   >
                     {/* Status Badge & Actions */}
                     <div className="flex justify-between items-start mb-3">
@@ -343,10 +325,10 @@ export default function AdminDashboard() {
 
                         <button
                           onClick={() => handleDeleteIssue(issue.id)}
-                          className="p-2 text-white/40 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                          className="p-1 text-white/20 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
                           title="Delete Issue"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
@@ -354,37 +336,33 @@ export default function AdminDashboard() {
                     <div className="flex gap-4">
                       {/* Optional Image Thumbnail */}
                       {issue.image_urls && issue.image_urls.length > 0 && (
-                       <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 border border-white/10">
+                       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-white/10">
                          <img src={issue.image_urls[0]} alt="thumbnail" className="w-full h-full object-cover" />
                        </div>
                       )}
                       
                       <div className="flex-1">
-                        <p className="text-sm text-white/70 line-clamp-2 leading-relaxed mb-2 font-body">
+                        <p className="text-xs text-white/70 line-clamp-2 leading-relaxed mb-1.5 font-body">
                           {issue.description}
                         </p>
                         
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-auto text-xs text-white/40 font-mono">
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1.5" title={issue.email}>
-                              <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white">
-                                @
-                              </span>
-                              <span className="truncate max-w-[150px]">{issue.email}</span>
-                            </div>
-                            <div className="text-[10px] opacity-70 ml-5 font-mono">ID: {issue.user_id}</div>
-                          </div>
-                          
-                          <div className="flex items-center gap-1">
-                            <Navigation size={12} className="text-accent/70" />
-                            <span>{issue.lat.toFixed(4)}, {issue.lng.toFixed(4)}</span>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <Clock size={12} />
-                            <span>{format(new Date(issue.created_at), 'MMM d, ha')}</span>
-                          </div>
-                        </div>
+                         <div className="flex flex-col gap-1 mt-auto">
+                           <div className="flex items-center justify-between text-[9px] font-mono">
+                             <span className="truncate max-w-[120px] opacity-40">{issue.email}</span>
+                             <span className="opacity-30">ID: {issue.id}</span>
+                           </div>
+                           <div className="flex items-center gap-2 text-[10px] text-white/40 font-mono">
+                             <div className="flex items-center gap-1">
+                               <Navigation size={10} className="text-accent/50" />
+                               <span>{issue.lat.toFixed(4)}, {issue.lng.toFixed(4)}</span>
+                             </div>
+                             <span className="opacity-20">•</span>
+                             <div className="flex items-center gap-1">
+                               <Clock size={10} />
+                               <span>{format(new Date(issue.created_at), 'MMM d, ha')}</span>
+                             </div>
+                           </div>
+                         </div>
                       </div>
                     </div>
                   </div>
