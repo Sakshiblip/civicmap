@@ -7,7 +7,7 @@ import { LogOut, Filter, Clock, CheckCircle, Navigation, LayoutDashboard, Loader
 import { format } from 'date-fns';
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [issues, setIssues] = useState<Issue[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | IssueStatus>('all');
   const [typeFilter, setTypeFilter] = useState('All');
