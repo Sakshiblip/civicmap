@@ -3,7 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Issue, IssueStatus } from '../lib/supabase';
 import MapComponent from './MapComponent';
-import { LogOut, Filter, Clock, CheckCircle, Navigation, LayoutDashboard, Loader2, Trash2 } from 'lucide-react';
+import { LogOut, Filter, Clock, CheckCircle, Navigation, LayoutDashboard, Loader2, Trash2, Download } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function AdminDashboard() {
@@ -120,6 +120,33 @@ export default function AdminDashboard() {
     // Note: The UI updates automatically via the real-time subscription
   };
 
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Issue Type', 'Description', 'Status', 'Coordinates', 'Reporter Email', 'Submitted Date', 'Last Updated'];
+    const csvContent = [
+      headers.join(','),
+      ...issues.map(issue => [
+        issue.id,
+        issue.issue_type,
+        `"${issue.description.replace(/"/g, '""')}"`,
+        issue.status,
+        `"${issue.lat}, ${issue.lng}"`,
+        issue.email,
+        issue.created_at,
+        issue.updated_at
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `nagarseva_issues_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filteredIssues = issues.filter(issue => {
     if (statusFilter !== 'all' && issue.status !== statusFilter) return false;
     if (typeFilter !== 'All' && issue.issue_type !== typeFilter) return false;
@@ -186,14 +213,19 @@ export default function AdminDashboard() {
         
         {/* Header Options */}
         <div className="p-6 border-b border-white/10 flex justify-between items-center">
-          <div className="flex items-center gap-3 text-white">
-            <span className="font-mono text-sm opacity-60">Session:</span>
-            <span className="font-bold font-body">{user?.email}</span>
-            <span className="px-2 py-0.5 bg-accent/20 text-accent rounded text-xs font-bold uppercase tracking-widest">Admin</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-accent rounded-lg border border-white/10 transition-all text-xs font-bold uppercase tracking-widest"
+              title="Export to CSV"
+            >
+              <Download size={14} />
+              <span className="hidden sm:inline">Export CSV</span>
+            </button>
+            <button onClick={logout} className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-red-400" title="Logout">
+              <LogOut size={18} />
+            </button>
           </div>
-          <button onClick={logout} className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-red-400" title="Logout">
-            <LogOut size={18} />
-          </button>
         </div>
 
         {/* Tabs and Filters */}
