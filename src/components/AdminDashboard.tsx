@@ -12,6 +12,8 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<'all' | IssueStatus>('all');
   const [typeFilter, setTypeFilter] = useState('All');
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
+  const [activeTab, setActiveTab] = useState<'issues' | 'logins'>('issues');
+  const [loginLogs, setLoginLogs] = useState<any[]>([]);
 
   useEffect(() => {
     loadIssues();
@@ -37,10 +39,39 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    loadLoginLogs();
+
+    const channel = supabase.channel('login-logs-channel')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'login_logs' },
+        (payload) => {
+          setLoginLogs(prev => [payload.new, ...prev].slice(0, 20));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const loadIssues = async () => {
     const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false });
     if (data) {
       setIssues(data as Issue[]);
+    }
+  };
+
+  const loadLoginLogs = async () => {
+    const { data } = await supabase
+      .from('login_logs')
+      .select('*')
+      .order('logged_in_at', { ascending: false })
+      .limit(20);
+    if (data) {
+      setLoginLogs(data);
     }
   };
 
@@ -97,116 +128,190 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {/* Filters */}
+        {/* Tabs and Filters */}
         <div className="p-4 border-b border-white/10 space-y-4">
-          <div className="flex items-center justify-between text-sm">
-            <h3 className="font-bold text-white/80 uppercase tracking-widest text-xs flex items-center gap-2">
-              <Filter size={14} /> LIVE Triage Feed
-            </h3>
-            <span className="text-accent font-mono bg-accent/10 px-2 py-1 rounded">
-              {filteredIssues.length} Results
-            </span>
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setActiveTab('issues')}
+              className={`flex-1 py-2 px-4 rounded-lg font-bold text-xs uppercase tracking-widest transition-all ${
+                activeTab === 'issues' ? 'bg-accent text-background shadow-lg' : 'bg-white/5 text-white/60 hover:bg-white/10'
+              }`}
+            >
+              Issue Feed
+            </button>
+            <button
+              onClick={() => setActiveTab('logins')}
+              className={`flex-1 py-2 px-4 rounded-lg font-bold text-xs uppercase tracking-widest transition-all ${
+                activeTab === 'logins' ? 'bg-accent text-background shadow-lg' : 'bg-white/5 text-white/60 hover:bg-white/10'
+              }`}
+            >
+              Login Activity
+            </button>
           </div>
 
-          <div className="flex gap-2">
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="flex-1 bg-surface border border-white/10 rounded-lg py-3 px-3 text-white text-base focus:outline-none focus:border-accent appearance-none font-body"
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="in_progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-            </select>
-            
-            <select 
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="flex-1 bg-surface border border-white/10 rounded-lg py-3 px-3 text-white text-base focus:outline-none focus:border-accent appearance-none font-body"
-            >
-              {types.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
+          {activeTab === 'issues' && (
+            <>
+              <div className="flex items-center justify-between text-sm">
+                <h3 className="font-bold text-white/80 uppercase tracking-widest text-xs flex items-center gap-2">
+                  <Filter size={14} /> LIVE Triage Feed
+                </h3>
+                <span className="text-accent font-mono bg-accent/10 px-2 py-1 rounded">
+                  {filteredIssues.length} Results
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="flex-1 bg-surface border border-white/10 rounded-lg py-3 px-3 text-white text-base focus:outline-none focus:border-accent appearance-none font-body"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+                
+                <select 
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="flex-1 bg-surface border border-white/10 rounded-lg py-3 px-3 text-white text-base focus:outline-none focus:border-accent appearance-none font-body"
+                >
+                  {types.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'logins' && (
+            <div className="flex items-center justify-between text-sm">
+              <h3 className="font-bold text-white/80 uppercase tracking-widest text-xs flex items-center gap-2">
+                <Clock size={14} /> Recent Login Events
+              </h3>
+              <span className="text-accent font-mono bg-accent/10 px-2 py-1 rounded">
+                Live
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Issue Feed List */}
-        <div className="flex-1 overflow-y-auto styled-scrollbar p-4 space-y-4">
-          {filteredIssues.length === 0 ? (
-            <div className="text-center py-20 text-white/30 font-body">
-              <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No issues matching filters.</p>
-            </div>
-          ) : (
-            filteredIssues.map((issue) => (
-              <div 
-                key={issue.id}
-                onClick={() => setFlyTo([issue.lat, issue.lng])}
-                className="bg-surface border border-white/5 hover:border-accent/30 rounded-xl p-4 transition-all cursor-pointer group"
-              >
-                {/* Status Badge & Actions */}
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${issue.status === 'pending' ? 'bg-pending animate-pulse' : issue.status === 'in_progress' ? 'bg-inprogress' : 'bg-resolved'}`} />
-                    <span className="font-bold font-heading text-white">{issue.issue_type}</span>
-                  </div>
-                  
-                  {/* Status Dropdown - Stop Propagation so it doesn't trigger map fly */}
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <select
-                      value={issue.status}
-                      onChange={(e) => handleStatusChange(issue.id, e.target.value as IssueStatus)}
-                      className={`text-xs font-bold px-3 py-2 rounded border appearance-none cursor-pointer focus:outline-none uppercase tracking-widest ${
-                        issue.status === 'pending' ? 'bg-pending/10 text-pending border-pending/20' : 
-                        issue.status === 'in_progress' ? 'bg-inprogress/10 text-inprogress border-inprogress/20' : 
-                        'bg-resolved/10 text-resolved border-resolved/20'
-                      }`}
-                    >
-                      <option value="pending">PENDING</option>
-                      <option value="in_progress">IN PROGRESS</option>
-                      <option value="resolved">RESOLVED</option>
-                    </select>
-                  </div>
+        {/* Content List */}
+        <div className="flex-1 overflow-y-auto styled-scrollbar p-0">
+          {activeTab === 'issues' ? (
+            <div className="p-4 space-y-4">
+              {filteredIssues.length === 0 ? (
+                <div className="text-center py-20 text-white/30 font-body">
+                  <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No issues matching filters.</p>
                 </div>
-
-                <div className="flex gap-4">
-                  {/* Optional Image Thumbnail */}
-                  {issue.image_urls && issue.image_urls.length > 0 && (
-                   <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 border border-white/10">
-                     <img src={issue.image_urls[0]} alt="thumbnail" className="w-full h-full object-cover" />
-                   </div>
-                  )}
-                  
-                  <div className="flex-1">
-                    <p className="text-sm text-white/70 line-clamp-2 leading-relaxed mb-2 font-body">
-                      {issue.description}
-                    </p>
-                    
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-auto text-xs text-white/40 font-mono">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5" title={issue.email}>
-                          <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white">
-                            @
-                          </span>
-                          <span className="truncate max-w-[150px]">{issue.email}</span>
-                        </div>
-                        <div className="text-[10px] opacity-70 ml-5 font-mono">ID: {issue.user_id}</div>
+              ) : (
+                filteredIssues.map((issue) => (
+                  <div 
+                    key={issue.id}
+                    onClick={() => setFlyTo([issue.lat, issue.lng])}
+                    className="bg-surface border border-white/5 hover:border-accent/30 rounded-xl p-4 transition-all cursor-pointer group"
+                  >
+                    {/* Status Badge & Actions */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2.5 h-2.5 rounded-full ${issue.status === 'pending' ? 'bg-pending animate-pulse' : issue.status === 'in_progress' ? 'bg-inprogress' : 'bg-resolved'}`} />
+                        <span className="font-bold font-heading text-white">{issue.issue_type}</span>
                       </div>
                       
-                      <div className="flex items-center gap-1">
-                        <Navigation size={12} className="text-accent/70" />
-                        <span>{issue.lat.toFixed(4)}, {issue.lng.toFixed(4)}</span>
+                      {/* Status Dropdown - Stop Propagation so it doesn't trigger map fly */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <select
+                          value={issue.status}
+                          onChange={(e) => handleStatusChange(issue.id, e.target.value as IssueStatus)}
+                          className={`text-xs font-bold px-3 py-2 rounded border appearance-none cursor-pointer focus:outline-none uppercase tracking-widest ${
+                            issue.status === 'pending' ? 'bg-pending/10 text-pending border-pending/20' : 
+                            issue.status === 'in_progress' ? 'bg-inprogress/10 text-inprogress border-inprogress/20' : 
+                            'bg-resolved/10 text-resolved border-resolved/20'
+                          }`}
+                        >
+                          <option value="pending">PENDING</option>
+                          <option value="in_progress">IN PROGRESS</option>
+                          <option value="resolved">RESOLVED</option>
+                        </select>
                       </div>
+                    </div>
 
-                      <div className="flex items-center gap-1">
-                        <Clock size={12} />
-                        <span>{format(new Date(issue.created_at), 'MMM d, ha')}</span>
+                    <div className="flex gap-4">
+                      {/* Optional Image Thumbnail */}
+                      {issue.image_urls && issue.image_urls.length > 0 && (
+                       <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 border border-white/10">
+                         <img src={issue.image_urls[0]} alt="thumbnail" className="w-full h-full object-cover" />
+                       </div>
+                      )}
+                      
+                      <div className="flex-1">
+                        <p className="text-sm text-white/70 line-clamp-2 leading-relaxed mb-2 font-body">
+                          {issue.description}
+                        </p>
+                        
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-auto text-xs text-white/40 font-mono">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5" title={issue.email}>
+                              <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white">
+                                @
+                              </span>
+                              <span className="truncate max-w-[150px]">{issue.email}</span>
+                            </div>
+                            <div className="text-[10px] opacity-70 ml-5 font-mono">ID: {issue.user_id}</div>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            <Navigation size={12} className="text-accent/70" />
+                            <span>{issue.lat.toFixed(4)}, {issue.lng.toFixed(4)}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <Clock size={12} />
+                            <span>{format(new Date(issue.created_at), 'MMM d, ha')}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="p-0">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-white/5 text-[10px] uppercase tracking-widest text-white/40 font-mono">
+                  <tr>
+                    <th className="px-4 py-3 font-bold border-b border-white/10">Email</th>
+                    <th className="px-4 py-3 font-bold border-b border-white/10">Role</th>
+                    <th className="px-4 py-3 font-bold border-b border-white/10">Time</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm font-body">
+                  {loginLogs.map((log) => (
+                    <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-3 text-white/80 truncate max-w-[150px]" title={log.email}>{log.email}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          log.role === 'admin' ? 'bg-accent/20 text-accent' : 'bg-white/10 text-white/60'
+                        }`}>
+                          {log.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-white/40 font-mono text-xs">
+                        {format(new Date(log.logged_in_at), 'HH:mm:ss')}
+                      </td>
+                    </tr>
+                  ))}
+                  {loginLogs.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-20 text-center text-white/30 font-body">
+                        No login activity recorded yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

@@ -31,7 +31,7 @@ export default function Auth() {
         if (error) throw error;
         setSuccessMsg('Password reset link sent — check your inbox');
       } else if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           if (error.message === 'Email not confirmed') {
             setErrorMsg('Please check your inbox and confirm your email before signing in, or contact admin if you did not receive the email.');
@@ -41,12 +41,22 @@ export default function Auth() {
           throw error;
         }
 
-        // Immediately query admin_emails fresh after session confirmation
+        // Determine user role
         const { data: adminData } = await supabase
           .from('admin_emails')
           .select('*')
           .eq('email', email)
           .single();
+
+        const role = adminData ? 'admin' : 'user';
+
+        // Log the login event
+        await supabase.from('login_logs').insert({
+          user_id: signInData.user?.id,
+          email,
+          role,
+          logged_in_at: new Date().toISOString()
+        });
 
         if (adminData) {
           navigate('/admin');
