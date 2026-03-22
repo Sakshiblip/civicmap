@@ -31,7 +31,7 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "NagarSeva <notifications@resend.dev>",
+        from: "NagarSeva <onboarding@resend.dev>",
         to: [email],
         subject: `Status Update: ${issue_type}`,
         html: `
@@ -62,7 +62,7 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error("Error in notify-status-change:", error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     })
