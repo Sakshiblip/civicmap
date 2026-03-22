@@ -4,46 +4,77 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --background: #0d1117;
+  --surface: #161b22;
+  --text-color: #ffffff;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+.light {
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --text-color: #0d1117;
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
 @layer base {
   body {
-    @apply bg-background text-white font-body m-0 p-0 overflow-x-hidden;
+    @apply bg-background font-body m-0 p-0 overflow-x-hidden transition-colors duration-300;
+    color: var(--text-color);
     overscroll-behavior-y: none;
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading tracking-tight;
+    color: var(--text-color);
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-surface/80 backdrop-blur-md border border-white/10;
+    @apply bg-surface/80 backdrop-blur-md border transition-all duration-300;
+    border-color: var(--border-color);
   }
   .glass-card {
-    @apply bg-surface/90 backdrop-blur-sm border border-white/5 rounded-xl shadow-xl;
+    @apply bg-surface/90 backdrop-blur-sm border rounded-xl shadow-xl transition-all duration-300;
+    border-color: var(--border-color);
   }
   .tap-target {
     @apply min-w-[44px] min-h-[44px] flex items-center justify-center;
   }
 }
 
-/* Leaflet Custom Overrides for Dark Mode */
+/* Leaflet Custom Overrides for Themes */
 .leaflet-container {
-  background-color: #0d1117 !important;
+  background-color: var(--background) !important;
   font-family: 'DM Sans', sans-serif;
+  transition: background-color 0.3s ease;
 }
+
 .leaflet-tile-pane {
   filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+  transition: filter 0.3s ease;
 }
+
+.light .leaflet-tile-pane {
+  filter: brightness(1) invert(0) contrast(1) hue-rotate(0deg) saturate(1) brightness(1);
+}
+
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  @apply bg-surface text-white border border-white/10 rounded-xl shadow-2xl;
+  @apply bg-gray-900 text-white border border-white/10 rounded-xl shadow-2xl transition-colors duration-200;
 }
+.light .leaflet-popup-content-wrapper, .light .leaflet-popup-tip {
+  @apply bg-white text-gray-900 border-black/10;
+}
+
 .leaflet-popup-content {
-  color: white !important;
+  color: var(--text-color) !important;
   margin: 14px 16px !important;
 }
+
 .leaflet-container a.leaflet-popup-close-button {
-  color: white !important;
+  color: var(--text-color) !important;
   opacity: 0.8;
   padding: 0 !important;
   width: 44px !important;
@@ -96,7 +127,10 @@
 }
 
 .locate-me-btn {
-  @apply bg-surface/90 hover:bg-surface text-white p-3 rounded-full shadow-2xl border border-white/20 transition-all hover:scale-110 active:scale-95;
+  @apply bg-gray-900/90 hover:bg-gray-900 text-white p-3 rounded-full shadow-2xl border border-white/20 transition-all hover:scale-110 active:scale-95;
+}
+.light .locate-me-btn {
+  @apply bg-white/90 hover:bg-white text-gray-900 border-black/20;
 }
 
 /* Success Toast */
