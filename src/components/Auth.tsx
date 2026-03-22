@@ -90,7 +90,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8 relative overflow-hidden">
       {/* Abstract Map Background Simulation */}
       <div className="absolute inset-0 opacity-10 pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle at 20% 40%, rgba(0, 212, 170, 0.4) 0%, transparent 40%), radial-gradient(circle at 80% 60%, rgba(16, 185, 129, 0.4) 0%, transparent 40%)' }} />
@@ -108,12 +108,12 @@ export default function Auth() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white/80 uppercase tracking-widest text-xs">Email Address</label>
+            <label className="text-xs sm:text-sm font-medium text-white/80 uppercase tracking-widest">Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-surface border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors font-mono"
+              className="w-full bg-surface border border-white/10 rounded-lg px-4 py-3 sm:py-4 text-white focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors font-mono text-base"
               placeholder="user@example.com"
               required
             />
@@ -121,12 +121,12 @@ export default function Auth() {
 
           {!isForgotPassword && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80 uppercase tracking-widest text-xs">Password</label>
+              <label className="text-xs sm:text-sm font-medium text-white/80 uppercase tracking-widest">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-surface border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors font-mono"
+                className="w-full bg-surface border border-white/10 rounded-lg px-4 py-3 sm:py-4 text-white focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors font-mono text-base"
                 placeholder="••••••••"
                 required
                 minLength={6}
@@ -136,7 +136,7 @@ export default function Auth() {
                   <button
                     type="button"
                     onClick={() => { setIsForgotPassword(true); setErrorMsg(''); setSuccessMsg(''); setShowResend(false); }}
-                    className="text-xs text-accent hover:underline"
+                    className="text-sm sm:text-xs text-accent hover:underline py-2"
                   >
                     Forgot Password?
                   </button>
@@ -170,7 +170,7 @@ export default function Auth() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-accent hover:bg-accent/80 text-background font-bold py-3 px-4 rounded-lg flex flex-center items-center justify-center gap-2 transition-all disabled:opacity-50"
+            className="w-full bg-accent hover:bg-accent/80 text-background font-bold py-4 px-4 rounded-lg flex flex-center items-center justify-center gap-2 transition-all disabled:opacity-50 text-lg"
           >
             {isSubmitting ? 'Processing...' : (
               isForgotPassword ? 'Send Reset Link' : (isLogin ? 'Sign In' : 'Sign Up')

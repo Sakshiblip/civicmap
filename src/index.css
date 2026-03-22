@@ -6,7 +6,8 @@
 
 @layer base {
   body {
-    @apply bg-background text-white font-body m-0 p-0 overflow-hidden;
+    @apply bg-background text-white font-body m-0 p-0 overflow-x-hidden;
+    overscroll-behavior-y: none;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -20,6 +21,9 @@
   }
   .glass-card {
     @apply bg-surface/90 backdrop-blur-sm border border-white/5 rounded-xl shadow-xl;
+  }
+  .tap-target {
+    @apply min-w-[44px] min-h-[44px] flex items-center justify-center;
   }
 }
 
@@ -40,13 +44,18 @@
 }
 .leaflet-container a.leaflet-popup-close-button {
   color: white !important;
-  opacity: 0.6;
-  padding: 8px !important;
-  width: 28px !important;
-  height: 28px !important;
+  opacity: 0.8;
+  padding: 0 !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 24px !important;
 }
 .leaflet-container a.leaflet-popup-close-button:hover {
   opacity: 1;
+  background: rgba(255,255,255,0.1);
 }
 
 /* User Location Marker */

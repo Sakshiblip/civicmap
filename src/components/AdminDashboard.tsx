@@ -61,8 +61,8 @@ export default function AdminDashboard() {
   return (
     <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
       
-      {/* Map Area (Left) */}
-      <div className="flex-1 relative order-2 md:order-1 h-[50vh] md:h-full">
+      {/* Map Area */}
+      <div className="flex-1 relative order-1 md:order-2 h-[50vh] md:h-full">
         <MapComponent 
           issues={issues} 
           interactive={true}
@@ -82,8 +82,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Right Feed Panel */}
-      <div className="w-full md:w-[500px] h-[50vh] md:h-full z-10 glass flex flex-col shadow-2xl order-1 md:order-2 border-l border-white/5 bg-surface/95 block shrink-0">
+      {/* Feed Panel */}
+      <div className="w-full md:w-[500px] h-[50vh] md:h-full z-10 glass flex flex-col shadow-2xl order-2 md:order-1 border-l border-white/5 bg-surface/95 block shrink-0">
         
         {/* Header Options */}
         <div className="p-6 border-b border-white/10 flex justify-between items-center">
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
             <span className="font-bold font-body">{user?.email}</span>
             <span className="px-2 py-0.5 bg-accent/20 text-accent rounded text-xs font-bold uppercase tracking-widest">Admin</span>
           </div>
-          <button onClick={logout} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-red-400" title="Logout">
+          <button onClick={logout} className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-red-400" title="Logout">
             <LogOut size={18} />
           </button>
         </div>
@@ -112,7 +112,7 @@ export default function AdminDashboard() {
             <select 
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="flex-1 bg-surface border border-white/10 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-accent appearance-none font-body"
+              className="flex-1 bg-surface border border-white/10 rounded-lg py-3 px-3 text-white text-base focus:outline-none focus:border-accent appearance-none font-body"
             >
               <option value="all">All Statuses</option>
               <option value="pending">Pending</option>
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
             <select 
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="flex-1 bg-surface border border-white/10 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-accent appearance-none font-body"
+              className="flex-1 bg-surface border border-white/10 rounded-lg py-3 px-3 text-white text-base focus:outline-none focus:border-accent appearance-none font-body"
             >
               {types.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
                     <select
                       value={issue.status}
                       onChange={(e) => handleStatusChange(issue.id, e.target.value as IssueStatus)}
-                      className={`text-xs font-bold px-2 py-1 rounded border appearance-none cursor-pointer focus:outline-none uppercase tracking-widest ${
+                      className={`text-xs font-bold px-3 py-2 rounded border appearance-none cursor-pointer focus:outline-none uppercase tracking-widest ${
                         issue.status === 'pending' ? 'bg-pending/10 text-pending border-pending/20' : 
                         issue.status === 'in_progress' ? 'bg-inprogress/10 text-inprogress border-inprogress/20' : 
                         'bg-resolved/10 text-resolved border-resolved/20'

@@ -23,7 +23,7 @@ export default function UserDashboard() {
 
   useEffect(() => {
     loadIssues();
-    handleGeolocation();
+    const watchId = handleGeolocation();
 
     // Listen for realtime updates to all issues
     const channel = supabase.channel('user-issues-all-channel')
@@ -44,17 +44,21 @@ export default function UserDashboard() {
 
     return () => {
       supabase.removeChannel(channel);
+      if (typeof watchId === 'number') {
+        navigator.geolocation.clearWatch(watchId);
+      }
     };
   }, [user?.email]);
 
   const handleGeolocation = () => {
     if (!navigator.geolocation) return;
 
-    navigator.geolocation.getCurrentPosition(
+    return navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
-        setFlyTo([latitude, longitude]);
+        // Only set flyTo initially if we haven't already
+        setFlyTo(prev => prev ? prev : [latitude, longitude]);
       },
       (error) => {
         console.error('Geolocation error:', error);
@@ -62,9 +66,10 @@ export default function UserDashboard() {
           setToast('Location access denied — defaulting to Mumbai');
           setTimeout(() => setToast(null), 4000);
         }
-        // Fallback to Mumbai (MapComponent default center is Mumbai, but we can set flyTo)
-        setFlyTo([19.0760, 72.8777]);
-      }
+        // Fallback to Mumbai if we don't have a location yet
+        setFlyTo(prev => prev ? prev : [19.0760, 72.8777]);
+      },
+      { enableHighAccuracy: true }
     );
   };
 
@@ -152,16 +157,18 @@ export default function UserDashboard() {
   const userIssues = issues.filter(i => i.email === user?.email); // Filter them in frontend for the list
 
   return (
-    <div className="flex h-screen w-full relative overflow-hidden bg-background">
-      {/* Map Background */}
-      <MapComponent
-        issues={issues}
-        onMapClick={handleMapClick}
-        draftPin={draftLocation}
-        selectedLocation={flyTo}
-        userLocation={userLocation}
-        currentUserId={user?.id}
-      />
+    <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
+      {/* Map Section */}
+      <div className="h-[50vh] md:h-full md:flex-1 relative order-1 md:order-2">
+        <MapComponent
+          issues={issues}
+          onMapClick={handleMapClick}
+          draftPin={draftLocation}
+          selectedLocation={flyTo}
+          userLocation={userLocation}
+          currentUserId={user?.id}
+        />
+      </div>
 
       {/* Toast Notification */}
       {toast && (
@@ -173,8 +180,8 @@ export default function UserDashboard() {
         </div>
       )}
 
-      {/* Glassmorphism Sidebar (Left) */}
-      <div className="w-full md:w-[400px] h-full z-10 glass flex flex-col shadow-2xl transition-all duration-300 transform translate-x-0 absolute md:relative">
+      {/* Sidebar Section */}
+      <div className="h-[50vh] md:h-full w-full md:w-[400px] z-10 glass flex flex-col shadow-2xl order-2 md:order-1 relative shrink-0">
 
         {/* Header */}
         <div className="p-6 border-b border-white/10 flex justify-between items-center bg-surface/50">
@@ -185,7 +192,7 @@ export default function UserDashboard() {
             </h1>
             <p className="font-mono text-xs text-white/50 truncate mt-1">{user?.email}</p>
           </div>
-          <button onClick={logout} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-red-400">
+          <button onClick={logout} className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-red-400" title="Logout">
             <LogOut size={20} />
           </button>
         </div>
@@ -194,7 +201,7 @@ export default function UserDashboard() {
         <div className="flex p-4 gap-2 border-b border-white/5">
           <button
             onClick={() => setActiveTab('submit')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
+            className={`flex-1 py-4 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
               }`}
           >
             <PlusCircle size={18} />
@@ -202,7 +209,7 @@ export default function UserDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('list')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === 'list' ? 'bg-surface text-white border border-white/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
+            className={`flex-1 py-4 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === 'list' ? 'bg-surface text-white border border-white/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
               }`}
           >
             <List size={18} />
@@ -210,17 +217,22 @@ export default function UserDashboard() {
           </button>
         </div>
 
+        {/* Instruction Banner (Sticky on Mobile) */}
+        {activeTab === 'submit' && (
+          <div className="px-6 py-4 border-b border-white/5 bg-accent/5">
+            <div className="bg-accent/10 border border-accent/20 rounded-xl p-4 text-sm text-accent font-body flex gap-3">
+              <Navigation className="shrink-0 mt-0.5" size={18} />
+              <p>Click anywhere on the map to drop a pin and set the issue location.</p>
+            </div>
+          </div>
+        )}
+
         {/* Main Scrollable Area */}
         <div className="flex-1 overflow-y-auto w-full styled-scrollbar">
 
           {/* SUBMIT TAB */}
           {activeTab === 'submit' && (
             <div className="p-6 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="bg-accent/10 border border-accent/20 rounded-xl p-4 text-sm text-accent font-body flex gap-3">
-                <Navigation className="shrink-0 mt-0.5" size={18} />
-                <p>Click anywhere on the map to drop a pin and set the issue location.</p>
-              </div>
-
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Coordinates */}
                 <div className="space-y-2">
