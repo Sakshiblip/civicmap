@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { issue_type, lat, lng, new_status, email } = await req.json()
+    const { issue_type, lat, lng, status, email } = await req.json()
 
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY is not set")
@@ -42,7 +42,7 @@ serve(async (req) => {
             <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 5px 0;"><strong>Issue Type:</strong> ${issue_type}</p>
               <p style="margin: 5px 0;"><strong>Location:</strong> [${lat.toFixed(4)}, ${lng.toFixed(4)}]</p>
-              <p style="margin: 5px 0;"><strong>New Status:</strong> <span style="text-transform: uppercase; font-weight: bold; color: ${new_status === 'resolved' ? '#10b981' : new_status === 'in_progress' ? '#f59e0b' : '#ef4444'};">${new_status.replace('_', ' ')}</span></p>
+              <p style="margin: 5px 0;"><strong>New Status:</strong> <span style="text-transform: uppercase; font-weight: bold; color: ${status === 'resolved' ? '#10b981' : status === 'in_progress' ? '#f59e0b' : '#ef4444'};">${status.replace('_', ' ')}</span></p>
             </div>
             <p>Thank you for helping us keep our city clean and safe.</p>
             <p style="color: #6b7280; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">

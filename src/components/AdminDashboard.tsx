@@ -3,6 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Issue, IssueStatus } from '../lib/supabase';
 import MapComponent from './MapComponent';
+import ThemeToggle from './ThemeToggle';
 import { LogOut, Clock, CheckCircle, Navigation, Loader2, Trash2, Download, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -103,11 +104,11 @@ export default function AdminDashboard() {
       // Trigger email notification via Edge Function
       await supabase.functions.invoke('notify-status-change', {
         body: {
+          email: issue.email,
           issue_type: issue.issue_type,
+          status: newStatus,
           lat: issue.lat,
-          lng: issue.lng,
-          new_status: newStatus,
-          email: issue.email
+          lng: issue.lng
         }
       });
     } else {
@@ -223,6 +224,7 @@ export default function AdminDashboard() {
               <Download size={14} />
               <span className="hidden sm:inline">Export CSV</span>
             </button>
+            <ThemeToggle />
             <button onClick={logout} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/50 hover:text-red-400" title="Logout">
               <LogOut size={16} />
             </button>
