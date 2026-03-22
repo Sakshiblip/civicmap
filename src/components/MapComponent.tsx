@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Navigation } from 'lucide-react';
-import type { Issue } from '../lib/supabase';
+import { Navigation, Filter, ChevronDown } from 'lucide-react';
+import type { Issue, IssueStatus } from '../lib/supabase';
 import { format } from 'date-fns';
 
 // Fix Leaflet icons issue
@@ -36,7 +36,7 @@ const icons = {
 // Component to handle map clicks
 function MapEvents({ onMapClick }: { onMapClick?: (lat: number, lng: number) => void }) {
   useMapEvents({
-    click(e) {
+    click(e: L.LeafletMouseEvent) {
       if (onMapClick) {
         onMapClick(e.latlng.lat, e.latlng.lng);
       }
@@ -86,6 +86,16 @@ export default function MapComponent({
   isAdmin 
 }: MapComponentProps) {
   const defaultCenter: [number, number] = [19.0760, 72.8777]; // Mumbai
+  const [statusFilter, setStatusFilter] = useState<'all' | IssueStatus>('all');
+  const [typeFilter, setTypeFilter] = useState('All');
+
+  const types = ['All', 'Garbage Disposal', 'Pothole', 'Street Light', 'Flooding', 'Graffiti', 'Other'];
+
+  const filteredIssues = issues.filter(issue => {
+    if (statusFilter !== 'all' && issue.status !== statusFilter) return false;
+    if (typeFilter !== 'All' && issue.issue_type !== typeFilter) return false;
+    return true;
+  });
 
   return (
     <div className="relative w-full h-full z-0 bg-background pointer-events-auto">
@@ -103,6 +113,49 @@ export default function MapComponent({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           className="map-tiles"
         />
+
+        {/* Floating Filter Bar */}
+        <div className="absolute top-6 right-6 z-[1000] flex gap-3">
+          <div className="glass-card flex items-center px-4 py-2 gap-3 border border-white/10 shadow-2xl">
+            <Filter size={14} className="text-accent" />
+            
+            <div className="flex gap-2">
+              <div className="relative group">
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg py-1.5 pl-3 pr-8 text-xs font-bold text-white/80 appearance-none cursor-pointer focus:outline-none focus:border-accent transition-all uppercase tracking-wider font-mono"
+                >
+                  <option value="all">Status: All</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+              </div>
+
+              <div className="relative group">
+                <select 
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg py-1.5 pl-3 pr-8 text-xs font-bold text-white/80 appearance-none cursor-pointer focus:outline-none focus:border-accent transition-all uppercase tracking-wider font-mono"
+                >
+                  {types.map(t => <option key={t} value={t}>{t === 'All' ? 'Type: All' : t}</option>)}
+                </select>
+                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+              </div>
+            </div>
+
+            { (statusFilter !== 'all' || typeFilter !== 'All') && (
+              <button 
+                onClick={() => { setStatusFilter('all'); setTypeFilter('All'); }}
+                className="text-[10px] font-bold text-accent hover:underline uppercase tracking-tight ml-1"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
         
         {interactive && onMapClick && <MapEvents onMapClick={onMapClick} />}
         {selectedLocation && <FlyToLocation center={selectedLocation} zoom={userLocation && selectedLocation[0] === userLocation[0] && selectedLocation[1] === userLocation[1] ? 15 : 16} />}
@@ -123,7 +176,7 @@ export default function MapComponent({
           </Marker>
         )}
 
-        {issues.map((issue) => (
+        {filteredIssues.map((issue) => (
           <Marker 
             key={issue.id} 
             position={[issue.lat, issue.lng]} 

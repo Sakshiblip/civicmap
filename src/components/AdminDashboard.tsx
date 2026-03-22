@@ -82,9 +82,30 @@ export default function AdminDashboard() {
   };
 
   const handleStatusChange = async (id: string, newStatus: IssueStatus) => {
+    const issue = issues.find(i => i.id === id);
+    if (!issue) return;
+
     // Optimistic update
-    setIssues(prev => prev.map(issue => issue.id === id ? { ...issue, status: newStatus } : issue));
-    await supabase.from('issues').update({ status: newStatus }).eq('id', id);
+    setIssues(prev => prev.map(i => i.id === id ? { ...i, status: newStatus } : i));
+    
+    const { error: dbError } = await supabase.from('issues').update({ status: newStatus }).eq('id', id);
+
+    if (!dbError) {
+      // Trigger email notification via Edge Function
+      await supabase.functions.invoke('notify-status-change', {
+        body: {
+          issue_type: issue.issue_type,
+          lat: issue.lat,
+          lng: issue.lng,
+          new_status: newStatus,
+          email: issue.email
+        }
+      });
+    } else {
+      // Revert optimism if error
+      setIssues(prev => prev.map(i => i.id === id ? { ...i, status: issue.status } : i));
+      alert('Failed to update status: ' + dbError.message);
+    }
   };
 
   const handleDeleteIssue = async (id: string) => {
