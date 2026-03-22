@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Issue } from '../lib/supabase';
 import MapComponent from './MapComponent';
-import { LogOut, PlusCircle, List, MapPin, Image as ImageIcon, Send, Navigation, Clock, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { LogOut, PlusCircle, List, MapPin, Image as ImageIcon, Send, Navigation, Clock, CheckCircle, ArrowRight, Loader2, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function UserDashboard() {
@@ -23,10 +23,12 @@ export default function UserDashboard() {
   const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const objectUrlsRef = React.useRef<string[]>([]);
+  const [dailyIssueCount, setDailyIssueCount] = useState(0);
+  const objectUrlsRef = useRef<string[]>([]);
 
   useEffect(() => {
     loadIssues();
+    checkDailyLimit();
     const watchId = handleGeolocation();
 
     // Listen for realtime updates to all issues
@@ -91,6 +93,30 @@ export default function UserDashboard() {
       setIssues(data as Issue[]);
     }
     setIsLoading(false);
+  };
+  
+  const checkDailyLimit = async () => {
+    if (!user) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const { count, error } = await supabase
+      .from('issues')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', today.toISOString());
+
+    if (!error && count !== null) {
+      setDailyIssueCount(count);
+    }
+  };
+
+  const handleShare = (id: string) => {
+    const url = `https://nagarseva-mumbai.vercel.app/issue/${id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setToast({ message: 'Link copied to clipboard', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    });
   };
 
   const handleMapClick = (lat: number, lng: number) => {
@@ -187,6 +213,9 @@ export default function UserDashboard() {
       // Cleanup preview URLs
       objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
       objectUrlsRef.current = [];
+      
+      // Update daily limit count
+      await checkDailyLimit();
     }
 
     // Reset form
@@ -384,23 +413,34 @@ export default function UserDashboard() {
                     </div>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={!draftLocation || !description || isSubmitting}
-                    className="w-full bg-accent hover:bg-accent/80 text-background font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent/20"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <Send size={18} />
-                        Submit Report
-                      </>
+                  <div className="space-y-3">
+                    <button
+                      type="submit"
+                      disabled={!draftLocation || !description || isSubmitting || dailyIssueCount >= 3}
+                      className="w-full bg-accent hover:bg-accent/80 text-background font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent/20"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={18} />
+                          Submit Report
+                        </>
+                      )}
+                    </button>
+                    
+                    {dailyIssueCount >= 3 && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                        <p className="text-xs text-red-400 font-bold text-center tracking-tight leading-relaxed">
+                          You have reached the daily limit of 3 issue reports. <br />
+                          Please try again tomorrow.
+                        </p>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -452,8 +492,17 @@ export default function UserDashboard() {
                           {format(new Date(issue.created_at), 'MMM d, h:mm a')}
                         </div>
                       </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-accent flex items-center gap-1">
-                        View <ArrowRight size={12} />
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleShare(issue.id)}
+                          className="p-1.5 text-white/20 hover:text-accent hover:bg-accent/10 rounded transition-all"
+                          title="Share Issue"
+                        >
+                          <Share2 size={14} />
+                        </button>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity text-accent flex items-center gap-1">
+                          View <ArrowRight size={12} />
+                        </div>
                       </div>
                     </div>
                   </div>

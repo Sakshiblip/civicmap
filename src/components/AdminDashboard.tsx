@@ -3,7 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Issue, IssueStatus } from '../lib/supabase';
 import MapComponent from './MapComponent';
-import { LogOut, Clock, CheckCircle, Navigation, Loader2, Trash2, Download } from 'lucide-react';
+import { LogOut, Clock, CheckCircle, Navigation, Loader2, Trash2, Download, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function AdminDashboard() {
@@ -16,6 +16,7 @@ export default function AdminDashboard() {
   const [loginLogs, setLoginLogs] = useState<any[]>([]);
   const [isLoadingIssues, setIsLoadingIssues] = useState(true);
   const [isLoadingLogins, setIsLoadingLogins] = useState(true);
+  const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' } | null>(null);
 
   useEffect(() => {
     loadIssues();
@@ -79,6 +80,14 @@ export default function AdminDashboard() {
       setLoginLogs(data);
     }
     setIsLoadingLogins(false);
+  };
+
+  const handleShare = (id: string) => {
+    const url = `https://nagarseva-mumbai.vercel.app/issue/${id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setToast({ message: 'Link copied to clipboard', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    });
   };
 
   const handleStatusChange = async (id: string, newStatus: IssueStatus) => {
@@ -324,6 +333,14 @@ export default function AdminDashboard() {
                         </select>
 
                         <button
+                          onClick={() => handleShare(issue.id)}
+                          className="p-1 text-white/20 hover:text-accent hover:bg-accent/10 rounded transition-all"
+                          title="Share Issue"
+                        >
+                          <Share2 size={14} />
+                        </button>
+
+                        <button
                           onClick={() => handleDeleteIssue(issue.id)}
                           className="p-1 text-white/20 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
                           title="Delete Issue"
@@ -417,6 +434,20 @@ export default function AdminDashboard() {
         </div>
       </div>
       </div>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[2000] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className={`${toast.type === 'success' ? 'toast-success' : 'bg-surface/90'} backdrop-blur-md border border-white/10 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-white`}>
+            {toast.type === 'success' ? (
+              <CheckCircle size={18} className="text-white" />
+            ) : (
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+            )}
+            <p className="text-sm font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import Auth from './components/Auth';
 import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import ResetPassword from './components/ResetPassword';
+import PublicIssueView from './components/PublicIssueView';
 
 function ProtectedRoute({ children, reqRole }: { children: React.ReactNode, reqRole?: 'admin' | 'user' }) {
   const { user, isLoading } = useAuth();
@@ -42,6 +43,7 @@ function AppRouter() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/dashboard" element={<ProtectedRoute reqRole="user"><UserDashboard /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute reqRole="admin"><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/issue/:id" element={<PublicIssueView />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
