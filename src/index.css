@@ -1,0 +1,176 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Epilogue:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0d1117;
+  --surface: #161b22;
+  --text-color: #ffffff;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+.light {
+  --background: #f8fafc; /* Slate 50 */
+  --surface: #ffffff;
+  --text-color: #0f172a; /* Slate 900 */
+  --border-color: rgba(148, 163, 184, 0.2); /* Slate 400 with opacity */
+}
+
+@layer base {
+  body {
+    @apply bg-background font-body m-0 p-0 overflow-x-hidden transition-colors duration-300;
+    color: var(--text-color);
+    overscroll-behavior-y: none;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+    color: var(--text-color);
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-surface/80 backdrop-blur-md border transition-all duration-300;
+    border-color: var(--border-color);
+  }
+  .glass-card {
+    @apply bg-surface/90 backdrop-blur-sm border rounded-xl shadow-xl transition-all duration-300;
+    border-color: var(--border-color);
+  }
+  .premium-card {
+    @apply bg-surface border rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-500 overflow-hidden;
+    border-color: var(--border-color);
+  }
+  .light .premium-card {
+    @apply shadow-[0_8px_30px_rgb(0,0,0,0.06)];
+  }
+  .tap-target {
+    @apply min-w-[44px] min-h-[44px] flex items-center justify-center;
+  }
+  .stepper-line {
+    @apply absolute top-1/2 left-0 h-0.5 bg-accent/20 -translate-y-1/2 transition-all duration-500 ease-out;
+  }
+  .stepper-line-active {
+    @apply absolute top-1/2 left-0 h-0.5 bg-accent -translate-y-1/2 transition-all duration-500 ease-out z-10;
+  }
+  .glow-accent {
+    @apply shadow-[0_0_20px_rgba(0,212,170,0.4)];
+  }
+}
+
+/* Leaflet Custom Overrides for Themes */
+.leaflet-container {
+  background-color: var(--background) !important;
+  font-family: 'DM Sans', sans-serif;
+  transition: background-color 0.3s ease;
+}
+
+.leaflet-tile-pane {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+  transition: filter 0.3s ease;
+}
+
+.light .leaflet-tile-pane {
+  filter: brightness(1) invert(0) contrast(1) hue-rotate(0deg) saturate(1) brightness(1);
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  @apply bg-gray-900 text-white border border-white/10 rounded-xl shadow-2xl transition-colors duration-200;
+}
+.light .leaflet-popup-content-wrapper, .light .leaflet-popup-tip {
+  @apply bg-white text-gray-900 border-black/10;
+}
+
+.leaflet-popup-content {
+  color: var(--text-color) !important;
+  margin: 14px 16px !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: #ffffff !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 50% !important;
+  opacity: 1 !important;
+  padding: 0 !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 24px !important;
+  font-weight: bold !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 1000 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+  transition: all 0.2s ease !important;
+}
+
+.light .leaflet-container a.leaflet-popup-close-button {
+  color: #0d1117 !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  transform: scale(1.05) !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.light .leaflet-container a.leaflet-popup-close-button:hover {
+  background-color: #ffffff !important;
+}
+
+/* User Location Marker */
+.user-location-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-circle {
+  width: 14px;
+  height: 14px;
+  background: #3b82f6;
+  border: 2px solid white;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: rgba(59, 130, 246, 0.4);
+  border-radius: 50%;
+  animation: pulse-blue 2s infinite;
+}
+
+@keyframes pulse-blue {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.locate-me-btn {
+  @apply bg-gray-900/90 hover:bg-gray-900 text-white p-3 rounded-full shadow-2xl border border-white/20 transition-all hover:scale-110 active:scale-95;
+}
+.light .locate-me-btn {
+  @apply bg-white/90 hover:bg-white text-gray-900 border-black/20;
+}
+
+/* Success Toast */
+.toast-success {
+  @apply bg-emerald-500/90 border-emerald-400/20 text-white shadow-emerald-500/20;
+}

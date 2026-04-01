@@ -1,0 +1,730 @@
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../lib/AuthContext';
+import { supabase } from '../lib/supabase';
+import type { Issue } from '../lib/supabase';
+import MapComponent from './MapComponent';
+import ThemeToggle from './ThemeToggle';
+import { LogOut, PlusCircle, List, MapPin, Image as ImageIcon, Send, Navigation, Clock, CheckCircle, ArrowRight, Loader2, Share2 } from 'lucide-react';
+import { format } from 'date-fns';
+
+export default function UserDashboard() {
+  const { user, logout } = useAuth();
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [activeTab, setActiveTab] = useState<'submit' | 'list'>('submit');
+
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') !== 'light';
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (!isDark) {
+      document.documentElement.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.remove('light');
+      localStorage.setItem('theme', 'dark');
+    }
+  }, [isDark]);
+
+  // Submission Form State
+  const [draftLocation, setDraftLocation] = useState<[number, number] | null>(null);
+  const [issueType, setIssueType] = useState('Pothole');
+  const [description, setDescription] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [dailyIssueCount, setDailyIssueCount] = useState(0);
+  const [formStep, setFormStep] = useState(1);
+  const [sidebarPos, setSidebarPos] = useState({ x: 24, y: 24 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const objectUrlsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    loadIssues();
+    checkDailyLimit();
+    const watchId = handleGeolocation();
+
+    // Listen for realtime updates to all issues
+    const channel = supabase.channel('user-issues-all-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'issues' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setIssues(prev => [payload.new as Issue, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setIssues(prev => prev.map(i => i.id === payload.new.id ? payload.new as Issue : i));
+          } else if (payload.eventType === 'DELETE') {
+            setIssues(prev => prev.filter(i => i.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (typeof watchId === 'number') {
+        navigator.geolocation.clearWatch(watchId);
+      }
+      // Cleanup preview URLs on unmount
+      objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [user?.email]);
+
+  const handleGeolocation = () => {
+    if (!navigator.geolocation) return;
+
+    return navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation([latitude, longitude]);
+        // Only set flyTo initially if we haven't already
+        setFlyTo(prev => prev ? prev : [latitude, longitude]);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        if (error.code === error.PERMISSION_DENIED) {
+        setToast({ message: 'Location access denied — defaulting to Mumbai', type: 'info' });
+        setTimeout(() => setToast(null), 4000);
+        }
+        // Fallback to Mumbai if we don't have a location yet
+        setFlyTo(prev => prev ? prev : [19.0760, 72.8777]);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  const loadIssues = async () => {
+    setIsLoading(true);
+    // We want to load ALL issues now so the map shows everything
+    const { data, error } = await supabase
+      .from('issues')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (data && !error) {
+      setIssues(data as Issue[]);
+    }
+    setIsLoading(false);
+  };
+  
+  const checkDailyLimit = async () => {
+    if (!user) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const { count, error } = await supabase
+      .from('issues')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', today.toISOString());
+
+    if (!error && count !== null) {
+      setDailyIssueCount(count);
+    }
+  };
+
+  const handleShare = (id: string) => {
+    const url = `https://nagarseva-mumbai.vercel.app/issue/${id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setToast({ message: 'Link copied to clipboard', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    });
+  };
+
+  const handleMapClick = (lat: number, lng: number) => {
+    if (activeTab === 'submit') {
+      setDraftLocation([lat, lng]);
+    }
+  };
+
+  const handleImageDemo = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = async (e: any) => {
+      const files = Array.from(e.target.files as FileList);
+      if (files.length === 0) return;
+
+      // Add to selected files
+      setSelectedFiles(prev => [...prev, ...files]);
+
+      // Create preview URLs
+      const newPreviews = files.map(file => {
+        const url = URL.createObjectURL(file);
+        objectUrlsRef.current.push(url);
+        return url;
+      });
+      setImageUrls(prev => [...prev, ...newPreviews]);
+    };
+    input.click();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!draftLocation || !user) return;
+
+    setIsSubmitting(true);
+    setUploadProgress(0);
+
+    const uploadedUrls: string[] = [];
+
+    // Upload files if any
+    if (selectedFiles.length > 0) {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('issue-images')
+          .upload(filePath, file, {
+            onUploadProgress: (progress: any) => {
+              const currentFileProgress = (progress.loaded / progress.total) * 100;
+              const overallProgress = ((i / selectedFiles.length) * 100) + (currentFileProgress / selectedFiles.length);
+              setUploadProgress(Math.round(overallProgress));
+            }
+          } as any);
+
+        if (uploadError) {
+          alert('Failed to upload image: ' + uploadError.message);
+          setIsSubmitting(false);
+          setUploadProgress(null);
+          return;
+        }
+
+        const { data } = supabase.storage
+          .from('issue-images')
+          .getPublicUrl(filePath);
+        
+        uploadedUrls.push(data.publicUrl);
+      }
+    }
+
+    setUploadProgress(null);
+
+    const { data, error } = await supabase.from('issues').insert({
+      user_id: user.id,
+      email: user.email,
+      lat: draftLocation[0],
+      lng: draftLocation[1],
+      issue_type: issueType,
+      description,
+      image_urls: uploadedUrls,
+      status: 'pending'
+    }).select().single();
+
+    if (error) {
+      alert(error.message);
+    } else if (data) {
+      setIssues((prev) => [data as Issue, ...prev]);
+      setToast({ message: 'Issue reported successfully!', type: 'success' });
+      setTimeout(() => setToast(null), 5000);
+      
+      // Cleanup preview URLs
+      objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      objectUrlsRef.current = [];
+      
+      // Update daily limit count
+      await checkDailyLimit();
+    }
+
+    // Reset form
+    setDraftLocation(null);
+    setIssueType('Pothole');
+    setDescription('');
+    setImageUrls([]);
+    setSelectedFiles([]);
+    setIsSubmitting(false);
+    setActiveTab('list');
+    setFormStep(1);
+  };  
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - sidebarPos.x,
+      y: e.clientY - sidebarPos.y
+    });
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      setSidebarPos({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
+
+  const userIssues = issues.filter(i => i.email === user?.email); // Filter them in frontend for the list
+
+  return (
+    <div className="flex h-screen w-full relative overflow-hidden bg-background">
+      {/* Map Section (Full screen) */}
+      <div className="absolute inset-0 z-0">
+        <MapComponent
+          issues={issues}
+          onMapClick={handleMapClick}
+          draftPin={draftLocation}
+          selectedLocation={flyTo}
+          userLocation={userLocation}
+          currentUserId={user?.id}
+        />
+      </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[2000] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className={`${toast.type === 'success' ? 'toast-success' : 'bg-surface/90'} backdrop-blur-md border border-white/10 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-white`}>
+            {toast.type === 'success' ? (
+              <CheckCircle size={18} className="text-white" />
+            ) : (
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+            )}
+            <p className="text-sm font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Draggable Sidebar */}
+      <div 
+        style={{ left: `${sidebarPos.x}px`, top: `${sidebarPos.y}px`, cursor: isDragging ? 'grabbing' : 'auto' }}
+        className="fixed w-[320px] max-h-[calc(100vh-48px)] z-[2000] glass flex flex-col shadow-2xl rounded-[32px] overflow-hidden select-none"
+      >
+
+        {/* Header (Drag Handle) */}
+        <div 
+          onMouseDown={handleMouseDown}
+          className="px-5 py-4 border-b border-white/5 flex justify-between items-center bg-surface/30 backdrop-blur-xl cursor-grab active:cursor-grabbing"
+        >
+          <div>
+            <h1 className="font-heading text-lg font-black text-white tracking-tight flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
+                <MapPin size={16} className="text-accent" />
+              </div>
+              NagarSeva
+            </h1>
+            <p className="font-mono text-[9px] text-white/40 truncate mt-1 uppercase tracking-widest px-0.5">Verified: {user?.email?.split('@')[0]}</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+            <button onClick={logout} className="w-8 h-8 flex items-center justify-center hover:bg-red-500/10 rounded-lg transition-all text-white/40 hover:text-red-400 group" title="Logout">
+              <LogOut size={16} className="transition-transform group-hover:scale-110" />
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs - Smaller */}
+        <div className="flex p-3 gap-1.5 border-b border-white/5">
+          <button
+            onClick={() => { setActiveTab('submit'); setFormStep(1); }}
+            className={`flex-1 py-2 px-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
+              }`}
+          >
+            <PlusCircle size={14} />
+            Report Issue
+          </button>
+          <button
+            onClick={() => setActiveTab('list')}
+            className={`flex-1 py-2 px-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all ${activeTab === 'list' ? 'bg-surface text-white border border-white/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
+              }`}
+          >
+            <List size={14} />
+            My Reports ({userIssues.length})
+          </button>
+        </div>
+
+        {/* Instruction Banner - Compact */}
+        {activeTab === 'submit' && (
+          <div className="px-5 py-2.5 border-b border-white/5 bg-accent/5">
+            <div className="bg-accent/10 border border-accent/20 rounded-xl p-2.5 text-[10px] text-accent font-body flex gap-2">
+              <Navigation className="shrink-0 mt-0.5" size={14} />
+              <p>Double-click anywhere on the map to drop a pin and set location.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Main Scrollable Area */}
+        <div className="flex-1 overflow-y-auto w-full styled-scrollbar">
+
+          {/* Community Pulse Section - Smaller */}
+          {activeTab === 'submit' && formStep === 1 && (
+            <div className="mx-5 mt-4 p-3.5 rounded-2xl bg-accent/5 border border-accent/10 flex items-center justify-between group hover:bg-accent/10 transition-all duration-500 overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-24 h-full opacity-10 group-hover:opacity-20 transition-opacity">
+                <svg viewBox="0 0 100 40" className="w-full h-full">
+                  <path d="M0 35 Q 25 35, 40 20 T 70 10 T 100 30" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent" />
+                </svg>
+              </div>
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="relative">
+                  <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+                  <div className="absolute inset-0 w-2 h-2 bg-accent rounded-full animate-ping opacity-75" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-white tracking-tight uppercase">Live Reports</p>
+                  <p className="text-[9px] text-white/50 font-medium tracking-wide">
+                    <span className="text-accent font-bold">{issues.filter(i => new Date(i.created_at).toDateString() === new Date().toDateString()).length + 8}</span> issues reported today
+                  </p>
+                </div>
+              </div>
+              <div className="flex -space-x-2 relative z-10">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="w-6 h-6 rounded-full border-2 border-surface bg-gray-800 flex items-center justify-center text-[7px] font-black text-white/60 shadow-lg capitalize">
+                    {['m','a','j','k'][i-1]}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Stepper Component - Smaller */}
+          {activeTab === 'submit' && (
+            <div className="px-6 pt-5 pb-3">
+              <div className="relative flex justify-between">
+                {/* Stepper Progress Lines */}
+                <div className="stepper-line w-full" />
+                <div className="stepper-line-active" style={{ width: `${((formStep - 1) / 2) * 100}%` }} />
+                
+                {/* Steps */}
+                {[1, 2, 3].map((step) => (
+                  <div key={step} className="relative z-20 flex flex-col items-center">
+                    <div 
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 font-bold border-2 text-[11px] ${
+                        formStep === step 
+                          ? 'bg-accent border-accent text-background glow-accent scale-110' 
+                          : formStep > step 
+                            ? 'bg-accent/20 border-accent text-accent' 
+                            : 'bg-surface border-white/20 text-white/40'
+                      }`}
+                    >
+                      {formStep > step ? <CheckCircle size={14} strokeWidth={3} /> : step}
+                    </div>
+                    <span className={`text-[9px] mt-1.5 font-bold uppercase tracking-widest transition-colors duration-300 ${
+                      formStep === step ? 'text-white' : 'text-white/40'
+                    }`}>
+                      {step === 1 ? 'Map' : step === 2 ? 'Details' : 'Media'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SUBMIT TAB - Compact */}
+          {activeTab === 'submit' && (
+            <div className="p-5 space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* STEP 1: LOCATION */}
+                {formStep === 1 && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-3">
+                      <div 
+                        className={`premium-card p-4 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${
+                          draftLocation ? 'scale-[1.01] border-accent/20 glow-accent' : 'opacity-80'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <label className="text-[9px] font-black text-accent uppercase tracking-[0.2em] font-mono">
+                            📍 Selected Location
+                          </label>
+                          {draftLocation && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
+                              <div className="w-1 h-1 bg-accent rounded-full animate-pulse" />
+                              <span className="text-[8px] font-bold text-accent uppercase tracking-wider">High precision</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-500 ${
+                            draftLocation ? 'bg-accent text-background' : 'bg-white/5 text-white/20 hover:bg-white/10'
+                          }`}>
+                            <MapPin size={18} />
+                          </div>
+                          <div className="flex-1">
+                            {draftLocation ? (
+                              <div className="space-y-0.5">
+                                <p className="text-sm font-mono font-bold text-white tracking-tighter">
+                                  {draftLocation[0].toFixed(5)}, {draftLocation[1].toFixed(5)}
+                                </p>
+                                <p className="text-[9px] text-accent font-bold flex items-center gap-1">
+                                  <CheckCircle size={9} /> Location locked
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-white/30 font-medium italic">Drop a pin on map...</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={!draftLocation}
+                      onClick={() => setFormStep(2)}
+                      className="w-full bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background font-black py-3 rounded-2xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:grayscale disabled:scale-100 shadow-xl shadow-accent/20 group text-xs"
+                    >
+                      Next: Issue Type
+                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                    </button>
+                  </div>
+                )}
+
+                {/* STEP 2: DETAILS */}
+                {formStep === 2 && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-4">
+                      {/* Issue Type */}
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Select Category</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {['Pothole', 'Garbage', 'Street Light', 'Flooding', 'Graffiti', 'Other'].map((type) => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => setIssueType(type)}
+                              className={`p-2 rounded-xl border text-[11px] font-bold transition-all ${
+                                issueType === type 
+                                  ? 'bg-accent text-background border-accent shadow-lg shadow-accent/10' 
+                                  : 'bg-surface/50 border-white/5 text-white/60 hover:border-white/20'
+                              }`}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Describe Situation</label>
+                        <textarea
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          required
+                          placeholder="What needs attention?"
+                          className="w-full bg-surface/50 border border-white/10 rounded-2xl p-3 text-[12px] text-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none font-body min-h-[100px] transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormStep(1)}
+                        className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all border border-white/10 text-[11px]"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!description || description.length < 5}
+                        onClick={() => setFormStep(3)}
+                        className="flex-1 bg-gradient-to-r from-accent to-emerald-400 text-background font-black py-3 rounded-2xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 shadow-xl shadow-accent/20 group text-xs"
+                      >
+                        Add Photos
+                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: PHOTOS & SUBMIT */}
+                {formStep === 3 && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-3">
+                      <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Evidence (Optional)</label>
+                      
+                      {imageUrls.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {imageUrls.map((url, i) => (
+                            <div key={i} className="aspect-square rounded-xl overflow-hidden border border-white/10 relative group">
+                              <img src={url} alt="Preview" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newFiles = [...selectedFiles];
+                                  newFiles.splice(i, 1);
+                                  setSelectedFiles(newFiles);
+                                  const newUrls = [...imageUrls];
+                                  URL.revokeObjectURL(newUrls[i]);
+                                  newUrls.splice(i, 1);
+                                  setImageUrls(newUrls);
+                                }}
+                                className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white shadow-xl transform scale-0 group-hover:scale-100 transition-transform"
+                              >
+                                <LogOut size={12} className="rotate-45" />
+                              </button>
+                            </div>
+                          ))}
+                          <div 
+                            onClick={handleImageDemo}
+                            className="aspect-square rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
+                          >
+                            <PlusCircle size={18} className="text-white/20 group-hover:text-accent" />
+                            <span className="text-[9px] font-bold text-white/30 group-hover:text-accent uppercase tracking-widest text-center px-1">Add More</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={handleImageDemo}
+                          className="premium-card p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-all group border-dashed"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:bg-accent/10">
+                            <ImageIcon size={24} className="text-white/20 group-hover:text-accent" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[12px] font-bold text-white group-hover:text-accent transition-colors">Select Photos</p>
+                            <p className="text-[9px] text-white/30 uppercase tracking-widest mt-0.5">PNG, JPG up to 10MB</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Summary Card - even smaller */}
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
+                       <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Summary</p>
+                       <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-white/60">Type:</span>
+                          <span className="font-bold text-accent">{issueType}</span>
+                       </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFormStep(2)}
+                        className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all border border-white/10 text-[11px]"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || dailyIssueCount >= 3}
+                        className="flex-1 bg-accent text-background font-black py-3 rounded-2xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-accent/20 text-xs"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            Wait...
+                          </>
+                        ) : (
+                          <>
+                            <Send size={16} />
+                            Complete
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </form>
+            </div>
+          )}
+
+          {/* LIST TAB */}
+          {activeTab === 'list' && (
+            <div className="p-4 space-y-4 animate-in fade-in slide-in-from-left-4 duration-300 pb-8">
+              {userIssues.length === 0 ? (
+                <div className="text-center py-12 text-white/40">
+                  <div className="w-16 h-16 bg-surface/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
+                    <List size={24} />
+                  </div>
+                  <p>No issues reported yet.</p>
+                  <button onClick={() => setActiveTab('submit')} className="text-accent hover:underline mt-2 text-sm">Report your first issue</button>
+                </div>
+              ) : (
+                userIssues.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(issue => (
+                  <div
+                    key={issue.id}
+                    onClick={() => setFlyTo([issue.lat, issue.lng])}
+                    className="bg-surface/80 border border-white/5 hover:border-accent/50 rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 group"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${issue.status === 'pending' ? 'bg-pending animate-pulse' : issue.status === 'in_progress' ? 'bg-inprogress' : 'bg-resolved'}`} />
+                        <h3 className="font-heading font-bold">{issue.issue_type}</h3>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-1 rounded bg-surface border border-white/10 uppercase tracking-widest ${issue.status === 'pending' ? 'text-pending' : issue.status === 'in_progress' ? 'text-inprogress' : 'text-resolved'
+                        }`}>
+                        {issue.status.replace('_', ' ')}
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-white/60 line-clamp-2 mb-3 leading-relaxed">
+                      {issue.description}
+                    </p>
+
+                    <div className="flex items-center justify-between text-xs text-white/40 font-mono">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-accent/80" title={issue.email}>
+                          <span className="w-4 h-4 rounded-full bg-accent/20 flex items-center justify-center text-[10px] text-accent">
+                            @
+                          </span>
+                          <span>You</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={12} />
+                          {format(new Date(issue.created_at), 'MMM d, h:mm a')}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleShare(issue.id)}
+                          className="p-1.5 text-white/20 hover:text-accent hover:bg-accent/10 rounded transition-all"
+                          title="Share Issue"
+                        >
+                          <Share2 size={14} />
+                        </button>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity text-accent flex items-center gap-1">
+                          View <ArrowRight size={12} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Loading Overlay */}
+        {isLoading && (
+          <div className="absolute inset-x-0 top-0 bottom-0 z-[100] bg-background/40 backdrop-blur-[2px] flex items-center justify-center">
+            <div className="glass-card px-6 py-4 flex items-center gap-3 border border-white/10 shadow-2xl">
+              <Loader2 className="text-accent animate-spin" size={20} />
+              <span className="font-bold text-sm text-white/80 uppercase tracking-widest font-mono">Fetching Issues...</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
