@@ -31,7 +31,6 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
   const [editDisplayName, setEditDisplayName] = useState(displayName);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -223,11 +222,7 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
               {activeAccordion === 'edit' && (
                 <div className="p-3 animate-in slide-in-from-top-1 duration-200">
                   <form onSubmit={handleProfileUpdate} className="space-y-4">
-                    {isLoadingProfile ? (
-                      <div className="py-4 flex justify-center"><Loader2 size={18} className="text-accent animate-spin" /></div>
-                    ) : (
-                      <>
-                        <div className="space-y-1.5">
+                    <div className="space-y-1.5">
                           <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-1">Display Name</label>
                           <input 
                             type="text"
@@ -284,9 +279,7 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
                           {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                           Save Changes
                         </button>
-                      </>
-                    )}
-                  </form>
+                    </form>
                 </div>
               )}
             </div>
