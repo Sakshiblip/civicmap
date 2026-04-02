@@ -35,7 +35,7 @@ export default function UserDashboard() {
   const [description, setDescription] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [_uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' } | null>(null);
