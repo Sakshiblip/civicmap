@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { Navigation, Filter, ChevronDown } from 'lucide-react';
 import type { Issue, IssueStatus } from '../lib/supabase';
 import { format } from 'date-fns';
+import HeatmapLayer from './HeatmapLayer';
 
 // Fix Leaflet icons issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -78,6 +79,8 @@ interface MapComponentProps {
   isAdmin?: boolean;
   showFilters?: boolean;
   compactFilters?: boolean;
+  baseLayerUrl?: string;
+  showHeatmap?: boolean;
 }
 
 // User Location Icon
@@ -98,7 +101,9 @@ export default function MapComponent({
   currentUserId, 
   isAdmin,
   showFilters = true,
-  compactFilters = false
+  compactFilters = false,
+  baseLayerUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  showHeatmap = false
 }: MapComponentProps) {
   const defaultCenter: [number, number] = [19.0760, 72.8777]; // Mumbai
   const [statusFilter, setStatusFilter] = useState<'all' | IssueStatus>('all');
@@ -135,9 +140,12 @@ export default function MapComponent({
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url={baseLayerUrl}
           className="map-tiles"
         />
+
+        {/* Heatmap Layer */}
+        <HeatmapLayer issues={issues} visible={showHeatmap} />
 
         {/* Floating Filter Bar */}
         {showFilters && (

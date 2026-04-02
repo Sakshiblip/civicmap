@@ -4,8 +4,12 @@ import { supabase } from '../lib/supabase';
 import type { Issue } from '../lib/supabase';
 import MapComponent from './MapComponent';
 import ThemeToggle from './ThemeToggle';
-import { LogOut, PlusCircle, List, MapPin, Image as ImageIcon, Send, Navigation, Clock, CheckCircle, ArrowRight, Loader2, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
+import SearchBar from './SearchBar';
+import AnalyticsPanel from './AnalyticsPanel';
+import LayerControlPanel from './LayerControlPanel';
+import { LogOut, PlusCircle, List, MapPin, Image as ImageIcon, Send, Navigation, Clock, CheckCircle, ArrowRight, Loader2, Share2, UserCircle2 } from 'lucide-react';
+import ProfileSidebar from './ProfileSidebar';
 
 export default function UserDashboard() {
   const { user, logout } = useAuth();
@@ -43,10 +47,26 @@ export default function UserDashboard() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [dailyIssueCount, setDailyIssueCount] = useState(0);
   const [formStep, setFormStep] = useState(1);
-  const [sidebarPos, setSidebarPos] = useState({ x: 24, y: 24 });
+  const [sidebarPos, setSidebarPos] = useState({ x: 24, y: 80 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const objectUrlsRef = useRef<string[]>([]);
+
+  // Map Controls State
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [overlays, setOverlays] = useState({
+    heatmap: false
+  });
+  const [opacities, setOpacities] = useState({
+    heatmap: 0.8
+  });
+
+  const baseLayerUrls = {
+    osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+    satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{x}/{y}'
+  };
 
   useEffect(() => {
     loadIssues();
@@ -251,6 +271,10 @@ export default function UserDashboard() {
     setFormStep(1);
   };  
 
+  const handleSearchSelect = (lat: number, lng: number) => {
+    setFlyTo([lat, lng]);
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setDragOffset({
@@ -264,7 +288,7 @@ export default function UserDashboard() {
       if (!isDragging) return;
       setSidebarPos({
         x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y
+        y: Math.max(80, e.clientY - dragOffset.y)
       });
     };
 
@@ -295,8 +319,39 @@ export default function UserDashboard() {
           selectedLocation={flyTo}
           userLocation={userLocation}
           currentUserId={user?.id}
+          baseLayerUrl={baseLayerUrls['osm']}
+          showHeatmap={overlays.heatmap}
         />
       </div>
+
+      {/* Floating Search Bar */}
+      <SearchBar onSelect={handleSearchSelect} userLocation={userLocation} />
+
+      {/* Analytics Panel */}
+      <AnalyticsPanel 
+        issues={issues} 
+        isOpen={isAnalyticsOpen} 
+        onClose={() => setIsAnalyticsOpen(false)} 
+      />
+
+      {/* Layer Control Panel */}
+      <LayerControlPanel 
+        overlays={overlays}
+        onOverlayToggle={(key) => setOverlays(prev => ({ ...prev, [key]: !prev[key] }))}
+        opacities={opacities}
+        onOpacityChange={(key, val) => setOpacities(prev => ({ ...prev, [key]: val }))}
+      />
+
+      {/* Analytics Trigger Button */}
+      {!isAnalyticsOpen && (
+        <button
+          onClick={() => setIsAnalyticsOpen(true)}
+          className="fixed bottom-24 right-6 w-14 h-14 rounded-full glass border border-white/10 shadow-2xl flex items-center justify-center text-accent hover:glow-accent transition-all animate-in fade-in slide-in-from-bottom-4 duration-500 z-[3000]"
+          title="Open Analytics"
+        >
+          <List size={24} />
+        </button>
+      )}
 
       {/* Toast Notification */}
       {toast && (
@@ -330,7 +385,9 @@ export default function UserDashboard() {
               </div>
               NagarSeva
             </h1>
-            <p className="font-mono text-[9px] text-white/40 truncate mt-1 uppercase tracking-widest px-0.5">Verified: {user?.email?.split('@')[0]}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="font-mono text-[9px] text-white/40 truncate uppercase tracking-widest px-0.5">Verified: {user?.email?.split('@')[0]}</p>
+            </div>
           </div>
           <div className="flex items-center gap-1.5">
             <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
@@ -373,35 +430,7 @@ export default function UserDashboard() {
         {/* Main Scrollable Area */}
         <div className="flex-1 overflow-y-auto w-full styled-scrollbar">
 
-          {/* Community Pulse Section - Smaller */}
-          {activeTab === 'submit' && formStep === 1 && (
-            <div className="mx-5 mt-4 p-3.5 rounded-2xl bg-accent/5 border border-accent/10 flex items-center justify-between group hover:bg-accent/10 transition-all duration-500 overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-24 h-full opacity-10 group-hover:opacity-20 transition-opacity">
-                <svg viewBox="0 0 100 40" className="w-full h-full">
-                  <path d="M0 35 Q 25 35, 40 20 T 70 10 T 100 30" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent" />
-                </svg>
-              </div>
-              <div className="flex items-center gap-3 relative z-10">
-                <div className="relative">
-                  <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-                  <div className="absolute inset-0 w-2 h-2 bg-accent rounded-full animate-ping opacity-75" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-black text-white tracking-tight uppercase">Live Reports</p>
-                  <p className="text-[9px] text-white/50 font-medium tracking-wide">
-                    <span className="text-accent font-bold">{issues.filter(i => new Date(i.created_at).toDateString() === new Date().toDateString()).length + 8}</span> issues reported today
-                  </p>
-                </div>
-              </div>
-              <div className="flex -space-x-2 relative z-10">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-6 h-6 rounded-full border-2 border-surface bg-gray-800 flex items-center justify-center text-[7px] font-black text-white/60 shadow-lg capitalize">
-                    {['m','a','j','k'][i-1]}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Community Pulse Section Removed */}
 
           {/* Stepper Component - Smaller */}
           {activeTab === 'submit' && (
@@ -451,7 +480,7 @@ export default function UserDashboard() {
                       >
                         <div className="flex justify-between items-start mb-3">
                           <label className="text-[9px] font-black text-accent uppercase tracking-[0.2em] font-mono">
-                            📍 Selected Location
+                            Selected Location
                           </label>
                           {draftLocation && (
                             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
@@ -462,12 +491,7 @@ export default function UserDashboard() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-500 ${
-                            draftLocation ? 'bg-accent text-background' : 'bg-white/5 text-white/20 hover:bg-white/10'
-                          }`}>
-                            <MapPin size={18} />
-                          </div>
-                          <div className="flex-1">
+                          <div className="flex-1 min-h-[36px] flex items-center">
                             {draftLocation ? (
                               <div className="space-y-0.5">
                                 <p className="text-sm font-mono font-bold text-white tracking-tighter">
@@ -725,6 +749,24 @@ export default function UserDashboard() {
           </div>
         )}
       </div>
+
+      {/* My Account Button - Top Left */}
+      <button 
+        onClick={() => setIsProfileOpen(true)}
+        className="fixed top-4 left-4 z-[3000] flex items-center gap-2 px-3 py-2 bg-surface/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl hover:bg-surface transition-all group"
+      >
+        <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
+          <UserCircle2 size={20} />
+        </div>
+        <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">My Account</span>
+      </button>
+
+      {/* Profile Sidebar Integrated */}
+      <ProfileSidebar 
+        user={user} 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+      />
     </div>
   );
 }

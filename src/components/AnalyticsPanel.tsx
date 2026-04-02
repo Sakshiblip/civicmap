@@ -1,0 +1,163 @@
+import { useState, useMemo } from 'react';
+import { BarChart2, X, AlertTriangle, TrendingUp, Clock, MapPin, Filter, Download, ArrowRight } from 'lucide-react';
+import { format } from 'date-fns';
+import type { Issue } from '../lib/supabase';
+
+interface AnalyticsPanelProps {
+  issues: Issue[];
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+// Mock ward names for demonstration (Mumbai wards)
+const wards = [
+  'A Ward (Colaba)', 'D Ward (Malabar Hill)', 'G North (Dharavi)', 'K West (Andheri)', 
+  'L Ward (Kurla)', 'H East (Santacruz)', 'M West (Chembur)', 'S Ward (Bhandup)'
+];
+
+export default function AnalyticsPanel({ issues, isOpen, onClose }: AnalyticsPanelProps) {
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+
+  const filteredIssues = useMemo(() => {
+    if (activeFilter === 'all') return issues;
+    return issues.filter(i => i.status === activeFilter);
+  }, [issues, activeFilter]);
+
+  const wardStats = useMemo(() => {
+    // Group issues by a mock ward (derived from index for demo)
+    const stats: Record<string, number> = {};
+    wards.forEach(ward => (stats[ward] = 0));
+    
+    filteredIssues.forEach((issue) => {
+      const wardIndex = (issue.lat + issue.lng) % wards.length; // Deterministic mock
+      const wardName = wards[Math.floor(wardIndex)];
+      stats[wardName] = (stats[wardName] || 0) + 1;
+    });
+
+    return Object.entries(stats)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+  }, [filteredIssues]);
+
+  const hottestWard = wardStats[0]?.name || 'N/A';
+  const lastReported = issues.length > 0 ? format(new Date(issues[0].created_at), 'h:mm a') : 'N/A';
+
+  const exportCSV = () => {
+    const headers = ['ID', 'Type', 'Status', 'Lat', 'Lng', 'Created At'];
+    const rows = issues.map(i => [i.id, i.issue_type, i.status, i.lat, i.lng, i.created_at]);
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `nagarseva_reports_${format(new Date(), 'yyyyMMdd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className={`fixed top-0 right-0 h-full w-[400px] z-[4000] transition-transform duration-500 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className="h-full glass border-l border-white/10 shadow-[-20px_0_40px_rgba(0,0,0,0.4)] flex flex-col backdrop-blur-3xl bg-surface/90">
+        
+        {/* Header */}
+        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-accent/20 flex items-center justify-center border border-accent/30 shadow-lg glow-accent">
+                <BarChart2 size={20} className="text-accent" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-white tracking-tight uppercase">Analytics Pulse</h2>
+                <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Live density data</p>
+              </div>
+           </div>
+           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white/40 hover:text-white transition-all group">
+             <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+           </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 styled-scrollbar space-y-8">
+           {/* Metric Cards */}
+           <div className="grid grid-cols-3 gap-3">
+              <div className="premium-card p-3.5 bg-white/5 border-white/10 text-center flex flex-col items-center justify-center gap-2">
+                 <AlertTriangle size={16} className="text-orange-500" />
+                 <div className="text-2xl font-black text-white font-mono leading-none tracking-tighter">{issues.length}</div>
+                 <div className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Total</div>
+              </div>
+              <div className="premium-card p-3.5 bg-white/5 border-white/10 text-center flex flex-col items-center justify-center gap-2">
+                 <TrendingUp size={16} className="text-emerald-500" />
+                 <div className="text-[10px] font-black text-white leading-none truncate max-w-full font-mono">{hottestWard.split(' ')[0]}</div>
+                 <div className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Hottest</div>
+              </div>
+              <div className="premium-card p-3.5 bg-white/5 border-white/10 text-center flex flex-col items-center justify-center gap-2">
+                 <Clock size={16} className="text-sky-500" />
+                 <div className="text-lg font-black text-white font-mono leading-none tracking-tighter">{lastReported}</div>
+                 <div className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Last</div>
+              </div>
+           </div>
+
+           {/* Filter Tabs */}
+           <div className="space-y-4">
+              <div className="flex justify-between items-center px-1">
+                <div className="flex items-center gap-2 text-[10px] font-black text-white/60 tracking-[0.2em] uppercase">
+                   <Filter size={12} className="text-accent" />
+                   Categorization
+                </div>
+              </div>
+              <div className="flex p-1 bg-surface/50 rounded-2xl border border-white/10 backdrop-blur-xl">
+                 {['all', 'pending', 'resolved'].map(f => (
+                   <button
+                     key={f}
+                     onClick={() => setActiveFilter(f as any)}
+                     className={`flex-1 py-2 px-3 rounded-xl font-bold text-[10px] transition-all uppercase tracking-widest ${activeFilter === f ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'text-white/40 hover:text-white/60'}`}
+                   >
+                     {f === 'all' ? 'Pulse' : f}
+                   </button>
+                 ))}
+              </div>
+           </div>
+
+           {/* Ward Density List */}
+           <div className="space-y-4">
+              <div className="flex justify-between items-center px-1">
+                <div className="flex items-center gap-2 text-[10px] font-black text-white/60 tracking-[0.2em] uppercase">
+                   <MapPin size={12} className="text-accent" />
+                   Ward-Level Density
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                 {wardStats.map((ward, i) => (
+                   <div key={ward.name} className="group cursor-pointer">
+                      <div className="flex justify-between items-end mb-2">
+                         <span className="text-xs font-bold text-white/80 group-hover:text-accent transition-colors">{ward.name}</span>
+                         <span className="text-[10px] font-mono font-black text-white/40">{ward.count} reports</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
+                         <div 
+                           className="h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r from-emerald-500/40 via-orange-500/60 to-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+                           style={{ width: `${(ward.count / (wardStats[0].count || 1)) * 100}%`, transitionDelay: `${i * 100}ms` }}
+                         />
+                      </div>
+                   </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-white/10 bg-surface/40 backdrop-blur-xl">
+           <button 
+             onClick={exportCSV}
+             className="w-full py-4 bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background font-black rounded-2xl flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-accent/30 group text-xs uppercase"
+           >
+             <Download size={16} className="transition-transform group-hover:translate-y-1" />
+             Export Data Cluster (.csv)
+             <ArrowRight size={14} className="ml-1 opacity-50 transition-transform group-hover:translate-x-1" />
+           </button>
+           <p className="text-center text-[9px] text-white/30 uppercase tracking-[0.2em] mt-4 font-mono">NagarSeva OpenData v2.1</p>
+        </div>
+      </div>
+    </div>
+  );
+}
