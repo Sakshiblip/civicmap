@@ -11,9 +11,11 @@ interface ProfileSidebarProps {
   user: any;
   isOpen: boolean;
   onClose: () => void;
+  displayName: string;
+  setDisplayName: (val: string) => void;
 }
 
-export default function ProfileSidebar({ user, isOpen, onClose }: ProfileSidebarProps) {
+export default function ProfileSidebar({ user, isOpen, onClose, displayName, setDisplayName }: ProfileSidebarProps) {
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
   const [myIssues, setMyIssues] = useState<any[]>([]);
   const [loginHistory, setLoginHistory] = useState<any[]>([]);
@@ -26,16 +28,21 @@ export default function ProfileSidebar({ user, isOpen, onClose }: ProfileSidebar
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Edit Profile State
-  const [displayName, setDisplayName] = useState('');
+  const [editDisplayName, setEditDisplayName] = useState(displayName);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setEditDisplayName(displayName);
+    }
+  }, [isOpen, displayName]);
+
+  useEffect(() => {
+    if (isOpen) {
       if (activeAccordion === 'reports') fetchMyIssues();
       if (activeAccordion === 'data') fetchLoginHistory();
-      if (activeAccordion === 'edit') fetchProfile();
     }
   }, [isOpen, activeAccordion]);
 
@@ -64,24 +71,6 @@ export default function ProfileSidebar({ user, isOpen, onClose }: ProfileSidebar
     setIsLoadingHistory(false);
   };
 
-  const fetchProfile = async () => {
-    if (!user) return;
-    setIsLoadingProfile(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('display_name')
-      .eq('id', user.id)
-      .single();
-    
-    if (data) {
-      setDisplayName(data.display_name || user.email.split('@')[0]);
-    } else if (error) {
-      console.warn('Profile not found, using email as default name.');
-      setDisplayName(user.email.split('@')[0]);
-    }
-    setIsLoadingProfile(false);
-  };
-
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -105,11 +94,13 @@ export default function ProfileSidebar({ user, isOpen, onClose }: ProfileSidebar
         .from('profiles')
         .upsert({ 
           id: user.id, 
-          display_name: displayName,
+          display_name: editDisplayName,
           updated_at: new Date().toISOString()
         });
       
       if (profileError) throw profileError;
+
+      setDisplayName(editDisplayName);
 
       setSuccessMsg('Profile updated successfully!');
       setNewPassword('');
@@ -191,7 +182,7 @@ export default function ProfileSidebar({ user, isOpen, onClose }: ProfileSidebar
                 {initials}
               </div>
               <h2 className="text-lg font-heading font-bold text-white tracking-tight">
-                {user?.email?.split('@')[0]}
+                {displayName}
               </h2>
               <p className="text-xs text-white/40 font-mono mt-1">{user?.email}</p>
             </div>
@@ -240,8 +231,8 @@ export default function ProfileSidebar({ user, isOpen, onClose }: ProfileSidebar
                           <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-1">Display Name</label>
                           <input 
                             type="text"
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
+                            value={editDisplayName}
+                            onChange={(e) => setEditDisplayName(e.target.value)}
                             className="w-full bg-surface border border-white/10 rounded-xl p-3 text-[12px] text-white outline-none focus:border-accent"
                             placeholder="Enter your name"
                           />

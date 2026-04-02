@@ -54,6 +54,7 @@ export default function UserDashboard() {
 
   // Map Controls State
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.email?.split('@')[0] || '');
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [overlays, setOverlays] = useState({
     heatmap: false
@@ -71,6 +72,7 @@ export default function UserDashboard() {
   useEffect(() => {
     loadIssues();
     checkDailyLimit();
+    fetchProfile();
     const watchId = handleGeolocation();
 
     // Listen for realtime updates to all issues
@@ -135,6 +137,19 @@ export default function UserDashboard() {
       setIssues(data as Issue[]);
     }
     setIsLoading(false);
+  };
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .single();
+    
+    if (data?.display_name) {
+      setDisplayName(data.display_name);
+    }
   };
   
   const checkDailyLimit = async () => {
@@ -386,7 +401,7 @@ export default function UserDashboard() {
               NagarSeva
             </h1>
             <div className="flex items-center gap-2 mt-1">
-              <p className="font-mono text-[9px] text-white/40 truncate uppercase tracking-widest px-0.5">Verified: {user?.email?.split('@')[0]}</p>
+              <p className="font-mono text-[9px] text-white/40 truncate uppercase tracking-widest px-0.5">Verified: {displayName}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -765,6 +780,8 @@ export default function UserDashboard() {
       <ProfileSidebar 
         user={user} 
         isOpen={isProfileOpen} 
+        displayName={displayName}
+        setDisplayName={setDisplayName}
         onClose={() => setIsProfileOpen(false)} 
       />
     </div>
