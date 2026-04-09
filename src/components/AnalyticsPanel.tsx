@@ -183,9 +183,7 @@ export default function AnalyticsPanel({ issues, isOpen, onClose }: AnalyticsPan
         </div>
 
         {/* Footer */}
-        <div className="py-4 px-6 border-t border-white/10 bg-surface/40 backdrop-blur-xl flex flex-col items-center">
-           <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-mono">NagarSeva OpenData v2.1</p>
-        </div>
+        <div className="py-4 px-6 border-t border-white/10 bg-surface/40 backdrop-blur-xl" />
       </div>
     </div>
   );

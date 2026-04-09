@@ -62,6 +62,7 @@ export default function UserDashboard() {
   const [opacities, setOpacities] = useState({
     heatmap: 0.8
   });
+  const [submittedIssue, setSubmittedIssue] = useState<Issue | null>(null);
 
   const baseLayerUrls = {
     osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -265,8 +266,7 @@ export default function UserDashboard() {
       alert(error.message);
     } else if (data) {
       setIssues((prev) => [data as Issue, ...prev]);
-      setToast({ message: 'Issue reported successfully!', type: 'success' });
-      setTimeout(() => setToast(null), 5000);
+      setSubmittedIssue(data as Issue);
       
       // Cleanup preview URLs
       objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
@@ -276,15 +276,7 @@ export default function UserDashboard() {
       await checkDailyLimit();
     }
 
-    // Reset form
-    setDraftLocation(null);
-    setIssueType('Pothole');
-    setDescription('');
-    setImageUrls([]);
-    setSelectedFiles([]);
     setIsSubmitting(false);
-    setActiveTab('list');
-    setFormStep(1);
   };  
 
   const handleSearchSelect = (lat: number, lng: number) => {
@@ -510,7 +502,7 @@ export default function UserDashboard() {
           )}
 
           {/* SUBMIT TAB - Compact */}
-          {activeTab === 'submit' && (
+          {activeTab === 'submit' && !submittedIssue && (
             <div className="p-5 space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
               <form onSubmit={handleSubmit} className="space-y-3">
                 {/* STEP 1: LOCATION */}
@@ -729,6 +721,59 @@ export default function UserDashboard() {
           )}
 
           {/* LIST TAB */}
+          {activeTab === 'submit' && submittedIssue && (
+            <div className="p-8 flex flex-col items-center text-center space-y-6 animate-in zoom-in-95 duration-500">
+              <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center border border-accent/20 shadow-2xl shadow-accent/20 group">
+                <CheckCircle size={40} className="text-accent group-hover:scale-110 transition-transform" />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-2xl font-black text-white tracking-tight">Report submitted!</h3>
+                <p className="text-sm text-white/40 leading-relaxed max-w-[240px] mx-auto">
+                  Our team has been notified. You can track its progress in your reports.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 w-full space-y-1">
+                <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Issue ID</label>
+                <p className="text-sm font-mono font-bold text-accent">{submittedIssue.id.slice(0, 8).toUpperCase()}</p>
+              </div>
+
+              <div className="flex flex-col gap-3 w-full pt-4">
+                <button
+                  onClick={() => {
+                    setActiveTab('list');
+                    setSubmittedIssue(null);
+                    setDraftLocation(null);
+                    setIssueType('Pothole');
+                    setDescription('');
+                    setImageUrls([]);
+                    setSelectedFiles([]);
+                    setFormStep(1);
+                  }}
+                  className="w-full bg-accent text-background font-black py-4 rounded-2xl shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2"
+                >
+                  <List size={16} />
+                  Track this issue
+                </button>
+                <button
+                  onClick={() => {
+                    setSubmittedIssue(null);
+                    setDraftLocation(null);
+                    setIssueType('Pothole');
+                    setDescription('');
+                    setImageUrls([]);
+                    setSelectedFiles([]);
+                    setFormStep(1);
+                  }}
+                  className="text-xs font-bold text-white/40 hover:text-accent transition-colors py-2"
+                >
+                  Report another issue
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'list' && (
             <div className="p-4 space-y-4 animate-in fade-in slide-in-from-left-4 duration-300 pb-8">
               {userIssues.length === 0 ? (

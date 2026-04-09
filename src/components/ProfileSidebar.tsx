@@ -468,7 +468,7 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
           <div className="p-6 border-t border-white/5 bg-surface/30">
             <div className="flex items-center gap-2 text-white/30 text-[10px] font-mono">
               <Globe size={12} />
-              <span>NagarSeva Production v1.2</span>
+              <span>NagarSeva v1.2</span>
             </div>
           </div>
         </div>

@@ -65,6 +65,7 @@ export default function AdminDashboard() {
   // Filter & Sort State
   const [wardFilter, setWardFilter] = useState('All');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'open' | 'resolved'>('newest');
+  const [adminShowHeatmap, setAdminShowHeatmap] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -124,6 +125,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleStatusUpdate = async (issueId: string, newStatus: string) => {
+    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: newStatus as any } : i));
+
+    const { error } = await supabase
+      .from('issues')
+      .update({ status: newStatus })
+      .eq('id', issueId);
+
+    if (error) {
+      console.error("Error updating status:", error.message);
+      // Re-fetch to sync if failed
+      checkUser();
+    }
+  };
+
   const handleExportCSV = () => {
     if (filteredIssues.length === 0) return;
 
@@ -154,6 +170,15 @@ export default function AdminDashboard() {
   };
 
   // Derived Data
+  const stats = useMemo(() => {
+    return {
+      total: issues.length,
+      pending: issues.filter(i => i.status === 'pending').length,
+      in_progress: issues.filter(i => i.status === 'in_progress').length,
+      resolved: issues.filter(i => i.status === 'resolved').length
+    };
+  }, [issues]);
+
   const distinctWards = useMemo(() => {
     const wards = Array.from(new Set(issues.map(i => i.ward_number))).filter(Boolean);
     return ['All', ...wards.sort()];
@@ -282,6 +307,26 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          {/* Stats Summary Section */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="glass-card p-4 border-l-4 border-l-white/10 group hover:border-l-accent transition-all">
+              <p className="text-[10px] uppercase tracking-widest text-white/40 font-black mb-1">Total Issues</p>
+              <p className="text-2xl font-black text-white">{stats.total}</p>
+            </div>
+            <div className="glass-card p-4 border-l-4 border-l-red-500/30 group hover:border-l-red-500 transition-all">
+              <p className="text-[10px] uppercase tracking-widest text-white/40 font-black mb-1">Pending</p>
+              <p className="text-2xl font-black text-red-400">{stats.pending}</p>
+            </div>
+            <div className="glass-card p-4 border-l-4 border-l-yellow-500/30 group hover:border-l-yellow-500 transition-all">
+              <p className="text-[10px] uppercase tracking-widest text-white/40 font-black mb-1">In Progress</p>
+              <p className="text-2xl font-black text-yellow-400">{stats.in_progress}</p>
+            </div>
+            <div className="glass-card p-4 border-l-4 border-l-green-500/30 group hover:border-l-green-500 transition-all">
+              <p className="text-[10px] uppercase tracking-widest text-white/40 font-black mb-1">Resolved</p>
+              <p className="text-2xl font-black text-green-400">{stats.resolved}</p>
+            </div>
+          </div>
+
           {activeTab === 'dashboard' ? (
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               
@@ -315,7 +360,7 @@ export default function AdminDashboard() {
                     <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] flex items-center gap-2">
                        <MapPin className="w-3 h-3" /> Assigned Ward
                     </label>
-                    <p className="text-sm font-medium text-white/90">Ward #{profile?.ward_number || 'N/A'}</p>
+                    <p className="text-sm font-medium text-white/90">{profile?.ward_number ? `Ward #${profile.ward_number}` : 'All Wards'}</p>
                   </div>
                 </div>
               </div>
@@ -412,13 +457,19 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         )}
-                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border ${
-                          issue.status === 'pending' ? 'text-red-400 bg-red-400/10 border-red-400/20' :
-                          issue.status === 'in_progress' ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' :
-                          'text-green-400 bg-green-400/10 border-green-400/20'
-                        }`}>
-                          {issue.status.replace('_', ' ')}
-                        </div>
+                        <select 
+                          value={issue.status}
+                          onChange={(e) => handleStatusUpdate(issue.id, e.target.value)}
+                          className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border cursor-pointer focus:outline-none transition-all ${
+                            issue.status === 'pending' ? 'text-red-400 bg-red-400/10 border-red-400/20 hover:bg-red-400/20' :
+                            issue.status === 'in_progress' ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20 hover:bg-yellow-400/20' :
+                            'text-green-400 bg-green-400/10 border-green-400/20 hover:bg-green-400/20'
+                          }`}
+                        >
+                          <option value="pending" className="bg-[#1a1a1e]">Pending</option>
+                          <option value="in_progress" className="bg-[#1a1a1e]">In Progress</option>
+                          <option value="resolved" className="bg-[#1a1a1e]">Resolved</option>
+                        </select>
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleDeleteIssue(issue.id); }}
@@ -443,11 +494,25 @@ export default function AdminDashboard() {
 
               {/* Live Map Section */}
               <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center border border-accent/30 text-accent">
-                    <MapPin className="w-5 h-5" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center border border-accent/30 text-accent">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-xl font-bold tracking-tight text-white">Live Map</h3>
                   </div>
-                  <h3 className="text-xl font-bold tracking-tight text-white">Live Map</h3>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setAdminShowHeatmap(!adminShowHeatmap)}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                        adminShowHeatmap 
+                          ? 'bg-accent text-background border-accent shadow-lg shadow-accent/20' 
+                          : 'bg-white/5 border-white/10 text-white/40 hover:text-white'
+                      }`}
+                    >
+                      {adminShowHeatmap ? 'Heatmap: On' : 'Heatmap: Off'}
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="glass-card overflow-hidden h-[500px] w-full relative border border-white/10 shadow-2xl">
@@ -457,6 +522,7 @@ export default function AdminDashboard() {
                     isAdmin={true}
                     showFilters={true}
                     compactFilters={false}
+                    showHeatmap={adminShowHeatmap}
                   />
                 </div>
               </div>
