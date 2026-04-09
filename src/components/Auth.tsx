@@ -163,11 +163,16 @@ export default function Auth() {
                   </button>
                 </div>
               )}
+              {isLogin && errorMsg && (errorMsg.toLowerCase().includes('invalid') || errorMsg.toLowerCase().includes('credentials')) && (
+                <p className="text-red-500 text-xs mt-2 ml-1 animate-in fade-in slide-in-from-top-1">
+                  Invalid email or password. Please try again.
+                </p>
+              )}
             </div>
           )}
 
-          {errorMsg && (
-            <div className={`text-sm font-mono p-3 rounded border ${showResend || errorMsg.toLowerCase().includes('already exists') || errorMsg.includes('Invalid') ? 'text-red-400 bg-red-400/10 border-red-400/20' : 'text-accent bg-accent/10 border-accent/20'}`}>
+          {errorMsg && !((errorMsg.toLowerCase().includes('invalid') || errorMsg.toLowerCase().includes('credentials')) && isLogin) && (
+            <div className={`text-sm font-mono p-3 rounded border ${showResend || errorMsg.toLowerCase().includes('already exists') ? 'text-red-400 bg-red-400/10 border-red-400/20' : 'text-accent bg-accent/10 border-accent/20'}`}>
               <p>{errorMsg}</p>
               {showResend && (
                 <button
@@ -196,7 +201,7 @@ export default function Auth() {
             {isSubmitting ? (
               <>
                 <Loader2 className="animate-spin w-5 h-5" />
-                {isForgotPassword ? 'Sending...' : (isLogin ? 'Signing In...' : 'Signing Up...')}
+                {isForgotPassword ? 'Sending...' : (isLogin ? 'Signing in…' : 'Signing Up...')}
               </>
             ) : (
               <>

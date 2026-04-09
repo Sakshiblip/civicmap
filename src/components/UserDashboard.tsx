@@ -490,13 +490,13 @@ export default function UserDashboard() {
                     <div 
                       className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-500 font-bold border-2 text-[10px] ${
                         formStep === step 
-                          ? 'bg-accent border-accent text-background glow-accent scale-110' 
+                          ? 'bg-accent border-accent text-white shadow-lg shadow-accent/30 scale-110' 
                           : formStep > step 
-                            ? 'bg-accent/20 border-accent text-accent' 
+                            ? 'bg-accent border-accent text-background' 
                             : 'bg-surface border-white/20 text-white/40'
                       }`}
                     >
-                      {formStep > step ? <CheckCircle size={12} strokeWidth={3} /> : step}
+                      {formStep > step ? <CheckCircle size={14} strokeWidth={3} /> : step}
                     </div>
                     <span className={`text-xs mt-1.5 font-bold uppercase tracking-widest transition-colors duration-300 ${
                       formStep === step ? 'text-white' : 'text-white/40'
@@ -553,15 +553,26 @@ export default function UserDashboard() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={!draftLocation}
-                      onClick={() => setFormStep(2)}
-                      className="w-full bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background font-black py-3 rounded-2xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:grayscale disabled:scale-100 shadow-xl shadow-accent/20 group text-xs"
-                    >
-                      Next: Issue Type
-                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                    </button>
+                    <div className="space-y-3">
+                      <button
+                        type="button"
+                        disabled={!draftLocation}
+                        onClick={() => setFormStep(2)}
+                        className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-black text-xs group ${
+                          !draftLocation 
+                            ? 'bg-transparent border border-white/10 text-white/30 hover:bg-white/5 cursor-not-allowed shadow-none' 
+                            : 'bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'
+                        }`}
+                      >
+                        Next: Issue Type
+                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                      </button>
+                      {!draftLocation && (
+                        <p className="text-[10px] text-white/40 text-center animate-pulse font-bold tracking-wider uppercase">
+                          Drop a pin on the map to continue
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 
