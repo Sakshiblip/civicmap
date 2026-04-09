@@ -416,10 +416,10 @@ export default function UserDashboard() {
           className="px-5 pt-3 pb-4 md:py-4 border-b border-white/5 flex flex-col bg-surface/30 backdrop-blur-xl cursor-grab active:cursor-grabbing"
         >
           {/* Mobile Drag Handle */}
-          <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-4 md:hidden" />
+          <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-4 md:hidden" />
           
           <div className="flex justify-between items-center">
-          <div>
+          <div className="hidden md:block">
             <h1 className="font-heading text-lg font-black text-white tracking-tight flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
                 <MapPin size={16} className="text-accent" />
@@ -440,10 +440,10 @@ export default function UserDashboard() {
       </div>
 
         {/* Tabs - Smaller */}
-        <div className="flex p-3 gap-2 border-b border-white/5">
+        <div className="flex items-center p-3 gap-4 border-b border-white/5">
           <button
             onClick={() => { setActiveTab('submit'); setFormStep(1); }}
-            className={`flex-1 min-h-[44px] py-2 px-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
+            className={`flex-1 h-10 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
               }`}
           >
             <PlusCircle size={16} />
@@ -451,42 +451,42 @@ export default function UserDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('list')}
-            className={`flex-1 min-h-[44px] py-2 px-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all ${activeTab === 'list' ? 'bg-surface text-white border border-white/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
+            className={`flex items-center gap-1.5 text-xs font-bold transition-all ${activeTab === 'list' ? 'text-accent' : 'text-white/40 hover:text-white'
               }`}
           >
             <List size={16} />
-            My Reports ({userIssues.length})
+            <span className="md:inline">My Reports ({userIssues.length})</span>
           </button>
         </div>
 
         {/* Instruction Banner - Compact */}
         {activeTab === 'submit' && (
-          <div className="px-5 py-2.5 border-b border-white/5 bg-accent/5">
-            <div className="bg-accent/10 border border-accent/20 rounded-xl p-2.5 text-[10px] text-accent font-body flex gap-2">
-              <Navigation className="shrink-0 mt-0.5" size={14} />
-              <p>Double-click anywhere on the map to drop a pin and set location.</p>
-            </div>
+          <div className="px-5 pt-3">
+            <p className="text-xs text-white/40 font-medium flex items-center gap-2">
+              <Navigation size={12} className="text-accent/50" />
+              Double-click map to drop a pin.
+            </p>
           </div>
         )}
 
         {/* Main Scrollable Area */}
-        <div className="flex-1 overflow-y-auto w-full styled-scrollbar">
+        <div className="flex-1 overflow-y-auto w-full flex flex-col gap-3 styled-scrollbar">
 
           {/* Community Pulse Section Removed */}
 
           {/* Stepper Component - Smaller */}
           {activeTab === 'submit' && (
-            <div className="px-6 pt-5 pb-3">
-              <div className="relative flex justify-between">
+            <div className="px-8 pt-4 pb-2">
+              <div className="relative flex justify-between gap-4">
                 {/* Stepper Progress Lines */}
                 <div className="stepper-line w-full" />
                 <div className="stepper-line-active" style={{ width: `${((formStep - 1) / 2) * 100}%` }} />
                 
                 {/* Steps */}
                 {[1, 2, 3].map((step) => (
-                  <div key={step} className="relative z-20 flex flex-col items-center">
+                  <div key={step} className="relative z-20 flex flex-col items-center flex-1">
                     <div 
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 font-bold border-2 text-[11px] ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-500 font-bold border-2 text-[10px] ${
                         formStep === step 
                           ? 'bg-accent border-accent text-background glow-accent scale-110' 
                           : formStep > step 
@@ -494,9 +494,9 @@ export default function UserDashboard() {
                             : 'bg-surface border-white/20 text-white/40'
                       }`}
                     >
-                      {formStep > step ? <CheckCircle size={14} strokeWidth={3} /> : step}
+                      {formStep > step ? <CheckCircle size={12} strokeWidth={3} /> : step}
                     </div>
-                    <span className={`text-[9px] mt-1.5 font-bold uppercase tracking-widest transition-colors duration-300 ${
+                    <span className={`text-xs mt-1.5 font-bold uppercase tracking-widest transition-colors duration-300 ${
                       formStep === step ? 'text-white' : 'text-white/40'
                     }`}>
                       {step === 1 ? 'Map' : step === 2 ? 'Details' : 'Media'}
@@ -509,14 +509,14 @@ export default function UserDashboard() {
 
           {/* SUBMIT TAB - Compact */}
           {activeTab === 'submit' && (
-            <div className="p-5 space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="p-5 space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
+              <form onSubmit={handleSubmit} className="space-y-3">
                 {/* STEP 1: LOCATION */}
                 {formStep === 1 && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
                     <div className="space-y-3">
                       <div 
-                        className={`premium-card p-4 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${
+                        className={`premium-card p-3 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${
                           draftLocation ? 'scale-[1.01] border-accent/20 glow-accent' : 'opacity-80'
                         }`}
                       >
@@ -544,7 +544,7 @@ export default function UserDashboard() {
                                 </p>
                               </div>
                             ) : (
-                              <p className="text-[11px] text-white/30 font-medium italic">Drop a pin on map...</p>
+                              <p className="text-sm text-white/30 font-medium italic">Drop a pin on map...</p>
                             )}
                           </div>
                         </div>
@@ -565,8 +565,8 @@ export default function UserDashboard() {
 
                 {/* STEP 2: DETAILS */}
                 {formStep === 2 && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-                    <div className="space-y-4">
+                  <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-3">
                       {/* Issue Type */}
                       <div className="space-y-2">
                         <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Select Category</label>
@@ -624,7 +624,7 @@ export default function UserDashboard() {
 
                 {/* STEP 3: PHOTOS & SUBMIT */}
                 {formStep === 3 && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
                     <div className="space-y-3">
                       <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Evidence (Optional)</label>
                       
