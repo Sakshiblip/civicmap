@@ -106,7 +106,7 @@ export default function SearchBar({ onSelect, userLocation }: SearchBarProps) {
   };
 
   return (
-    <div ref={containerRef} className="fixed top-16 md:top-4 left-1/2 -translate-x-1/2 z-[3000] w-full max-w-md px-4 sm:px-0">
+    <div ref={containerRef} className="fixed top-16 left-1/2 -translate-x-1/2 z-[3000] w-full max-w-md px-4 sm:px-0">
       <div className="relative group">
         <div className="flex bg-surface/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden focus-within:ring-2 focus-within:ring-accent/30 transition-all duration-300">
           <div className="flex items-center pl-4 text-white/40">

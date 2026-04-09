@@ -71,6 +71,7 @@ function FlyToLocation({ center, zoom }: { center?: [number, number], zoom?: num
 interface MapComponentProps {
   issues: Issue[];
   onMapClick?: (lat: number, lng: number) => void;
+  onLocateMe?: () => void;
   interactive?: boolean;
   selectedLocation?: [number, number] | null; // For centering map
   draftPin?: [number, number] | null; // During submission
@@ -94,6 +95,7 @@ const userLocationIcon = new L.DivIcon({
 export default function MapComponent({ 
   issues, 
   onMapClick, 
+  onLocateMe,
   interactive = true, 
   selectedLocation, 
   draftPin, 
@@ -273,17 +275,16 @@ export default function MapComponent({
           </Marker>
         ))}
 
-        {userLocation && (
-          <LocateMeControl 
-            userLocation={userLocation}
-          />
-        )}
+        <LocateMeControl 
+          onLocateMe={onLocateMe}
+          userLocation={userLocation}
+        />
       </MapContainer>
     </div>
   );
 }
 
-function LocateMeControl({ userLocation }: { userLocation: [number, number] }) {
+function LocateMeControl({ onLocateMe, userLocation }: { onLocateMe?: () => void, userLocation?: [number, number] | null }) {
   const map = useMap();
   return (
     <div className="leaflet-bottom leaflet-right mb-6 mr-6">
@@ -291,7 +292,11 @@ function LocateMeControl({ userLocation }: { userLocation: [number, number] }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            map.flyTo(userLocation, 15, { duration: 1.5 });
+            if (onLocateMe) {
+              onLocateMe();
+            } else if (userLocation) {
+              map.flyTo(userLocation, 15, { duration: 1.5 });
+            }
           }}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}

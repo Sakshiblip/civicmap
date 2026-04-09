@@ -73,7 +73,7 @@ export default function UserDashboard() {
     loadIssues();
     checkDailyLimit();
     fetchProfile();
-    const watchId = handleGeolocation();
+    handleGeolocation();
 
     // Listen for realtime updates to all issues
     const channel = supabase.channel('user-issues-all-channel')
@@ -94,9 +94,6 @@ export default function UserDashboard() {
 
     return () => {
       supabase.removeChannel(channel);
-      if (typeof watchId === 'number') {
-        navigator.geolocation.clearWatch(watchId);
-      }
       // Cleanup preview URLs on unmount
       objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
@@ -105,23 +102,27 @@ export default function UserDashboard() {
   const handleGeolocation = () => {
     if (!navigator.geolocation) return;
 
-    return navigator.geolocation.watchPosition(
+    navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
-        // Only set flyTo initially if we haven't already
-        setFlyTo(prev => prev ? prev : [latitude, longitude]);
+        // fly map to user location
+        setFlyTo([latitude, longitude]);
       },
       (error) => {
         console.error('Geolocation error:', error);
         if (error.code === error.PERMISSION_DENIED) {
-        setToast({ message: 'Location access denied — defaulting to Mumbai', type: 'info' });
-        setTimeout(() => setToast(null), 4000);
+          setToast({ message: 'Location access denied — defaulting to Mumbai', type: 'info' });
+          setTimeout(() => setToast(null), 4000);
         }
         // Fallback to Mumbai if we don't have a location yet
         setFlyTo(prev => prev ? prev : [19.0760, 72.8777]);
       },
-      { enableHighAccuracy: true }
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
     );
   };
 
@@ -325,19 +326,27 @@ export default function UserDashboard() {
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
-      {/* Mobile Header */}
-      <div className="md:hidden h-14 bg-surface/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 z-[4000] shrink-0">
+      {/* Fixed Top Navbar */}
+      <div className="fixed top-0 left-0 right-0 h-14 bg-surface/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 z-[4000] shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
             <MapPin size={18} className="text-accent" />
           </div>
           <h1 className="text-sm font-black text-white uppercase tracking-tighter">NagarSeva</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
           <button 
+            onClick={logout} 
+            className="w-10 h-10 flex items-center justify-center bg-red-500/10 rounded-full text-red-400 shadow-lg shadow-red-500/20 ring-1 ring-red-500/20 hover:bg-red-500/20 transition-all group" 
+            title="Logout"
+          >
+            <LogOut size={20} className="transition-transform group-hover:scale-110" />
+          </button>
+          <button 
             onClick={() => setIsProfileOpen(true)} 
-            className="w-10 h-10 flex items-center justify-center bg-accent/10 rounded-full text-accent shadow-lg shadow-accent/20 ring-1 ring-accent/20"
+            className="w-10 h-10 flex items-center justify-center bg-accent/10 rounded-full text-accent shadow-lg shadow-accent/20 ring-1 ring-accent/20 hover:bg-accent/20 transition-all"
+            title="Profile"
           >
             <UserCircle2 size={24} />
           </button>
@@ -348,6 +357,7 @@ export default function UserDashboard() {
         <MapComponent
           issues={issues}
           onMapClick={handleMapClick}
+          onLocateMe={handleGeolocation}
           draftPin={draftLocation}
           selectedLocation={flyTo}
           userLocation={userLocation}
@@ -418,7 +428,6 @@ export default function UserDashboard() {
           {/* Mobile Drag Handle */}
           <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-4 md:hidden" />
           
-          <div className="flex justify-between items-center">
           <div className="hidden md:block">
             <h1 className="font-heading text-lg font-black text-white tracking-tight flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
@@ -430,14 +439,7 @@ export default function UserDashboard() {
               <p className="font-mono text-[9px] text-white/40 truncate uppercase tracking-widest px-0.5">Verified: {displayName}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
-            <button onClick={logout} className="w-8 h-8 flex items-center justify-center hover:bg-red-500/10 rounded-lg transition-all text-white/40 hover:text-red-400 group" title="Logout">
-              <LogOut size={16} className="transition-transform group-hover:scale-110" />
-            </button>
-          </div>
         </div>
-      </div>
 
         {/* Tabs - Smaller */}
         <div className="flex items-center p-3 gap-4 border-b border-white/5">
@@ -792,16 +794,6 @@ export default function UserDashboard() {
         )}
       </div>
 
-      {/* My Account Button - Hidden on Mobile (moved to header) */}
-      <button 
-        onClick={() => setIsProfileOpen(true)}
-        className="hidden md:flex fixed top-4 left-4 z-[3000] items-center gap-2 px-3 py-2 bg-surface/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl hover:bg-surface transition-all group"
-      >
-        <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
-          <UserCircle2 size={20} />
-        </div>
-        <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">My Account</span>
-      </button>
 
       {/* Profile Sidebar Integrated */}
       <ProfileSidebar 
