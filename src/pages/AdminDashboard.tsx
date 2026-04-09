@@ -209,7 +209,7 @@ export default function AdminDashboard() {
         <h1 className="text-lg font-black tracking-tighter text-accent uppercase">NagarSeva</h1>
         <button 
           onClick={() => setIsSidebarOpen(true)}
-          className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+          className="w-12 h-12 flex items-center justify-center hover:bg-white/5 rounded-lg transition-colors"
         >
           <Menu className="w-6 h-6" />
         </button>
@@ -244,14 +244,14 @@ export default function AdminDashboard() {
           <nav className="flex-1 space-y-2">
             <button 
               onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${activeTab === 'dashboard' ? 'bg-accent/10 text-accent border border-accent/20 shadow-[0_0_20px_rgba(0,212,170,0.1)]' : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'}`}
+              className={`w-full min-h-[48px] flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${activeTab === 'dashboard' ? 'bg-accent/10 text-accent border border-accent/20 shadow-[0_0_20px_rgba(0,212,170,0.1)]' : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'}`}
             >
               <LayoutDashboard className={`w-5 h-5 transition-transform group-hover:scale-110`} />
               <span className="font-bold text-sm tracking-wide">Dashboard</span>
             </button>
             <button 
               onClick={() => { setActiveTab('issues'); setIsSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${activeTab === 'issues' ? 'bg-accent/10 text-accent border border-accent/20 shadow-[0_0_20px_rgba(0,212,170,0.1)]' : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'}`}
+              className={`w-full min-h-[48px] flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${activeTab === 'issues' ? 'bg-accent/10 text-accent border border-accent/20 shadow-[0_0_20px_rgba(0,212,170,0.1)]' : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'}`}
             >
               <ListFilter className={`w-5 h-5 transition-transform group-hover:scale-110`} />
               <span className="font-bold text-sm tracking-wide">Issues</span>
@@ -326,13 +326,13 @@ export default function AdminDashboard() {
               {/* Filters Bar */}
               <div className="glass-card p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                   <div className="p-2 bg-accent/10 border border-accent/20 rounded-lg text-accent">
+                   <div className="p-3 bg-accent/10 border border-accent/20 rounded-lg text-accent">
                       <Filter className="w-4 h-4" />
                    </div>
                    <select 
                     value={wardFilter}
                     onChange={(e) => setWardFilter(e.target.value)}
-                    className="flex-1 sm:w-48 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent appearance-none"
+                    className="flex-1 sm:w-48 h-12 sm:h-10 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent appearance-none"
                    >
                     {distinctWards.map(ward => (
                       <option key={ward} value={ward} className="bg-[#1a1a1e]">Ward: {ward}</option>
@@ -341,13 +341,13 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                   <div className="p-2 bg-white/5 border border-white/5 rounded-lg text-white/40">
+                   <div className="p-3 bg-white/5 border border-white/5 rounded-lg text-white/40">
                       <ArrowUpDown className="w-4 h-4" />
                    </div>
                    <select 
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="flex-1 sm:w-56 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent appearance-none"
+                    className="flex-1 sm:w-56 h-12 sm:h-10 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent appearance-none"
                    >
                     <option value="newest" className="bg-[#1a1a1e]">Sort: Newest First</option>
                     <option value="oldest" className="bg-[#1a1a1e]">Sort: Oldest First</option>
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
 
                 <button 
                   onClick={handleExportCSV}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-accent/10 border border-accent/20 rounded-lg text-accent hover:bg-accent hover:text-background transition-all font-bold text-xs uppercase tracking-widest"
+                  className="w-full sm:w-auto h-12 sm:h-auto flex items-center justify-center gap-2 px-6 py-2 bg-accent/10 border border-accent/20 rounded-lg text-accent hover:bg-accent hover:text-background transition-all font-bold text-xs uppercase tracking-widest"
                 >
                   <Download className="w-4 h-4" />
                   Export CSV
@@ -422,14 +422,14 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleDeleteIssue(issue.id); }}
-                            className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500 text-white transition-all group/del"
+                            className="w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500 text-white transition-all group/del"
                             title="Delete Issue"
                           >
                             <Trash2 className="w-5 h-5 transition-transform group-hover/del:scale-110" />
                           </button>
                           <button 
                             onClick={() => setSelectedIssue(issue)}
-                            className="p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-accent hover:text-background transition-all group/btn"
+                            className="w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white/5 border border-white/5 hover:bg-accent hover:text-background transition-all group/btn"
                             title="View Details"
                           >
                             <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
@@ -496,11 +496,11 @@ export default function AdminDashboard() {
 function IssueDetailModal({ issue, onClose }: { issue: Issue, onClose: () => void }) {
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
-        className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 relative flex flex-col gap-6"
+        className="glass-card w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative flex flex-col gap-6 rounded-none sm:rounded-[24px]"
         onClick={(e) => e.stopPropagation()}
       >
         <button 

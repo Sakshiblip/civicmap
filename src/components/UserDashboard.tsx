@@ -324,9 +324,27 @@ export default function UserDashboard() {
   const userIssues = issues.filter(i => i.email === user?.email); // Filter them in frontend for the list
 
   return (
-    <div className="flex h-screen w-full relative overflow-hidden bg-background">
+    <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
+      {/* Mobile Header */}
+      <div className="md:hidden h-14 bg-surface/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 z-[4000] shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+            <MapPin size={18} className="text-accent" />
+          </div>
+          <h1 className="text-sm font-black text-white uppercase tracking-tighter">NagarSeva</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+          <button 
+            onClick={() => setIsProfileOpen(true)} 
+            className="w-10 h-10 flex items-center justify-center bg-accent/10 rounded-full text-accent shadow-lg shadow-accent/20 ring-1 ring-accent/20"
+          >
+            <UserCircle2 size={24} />
+          </button>
+        </div>
+      </div>
       {/* Map Section (Full screen) */}
-      <div className="absolute inset-0 z-0">
+      <div className="relative md:absolute inset-0 z-0 flex-1">
         <MapComponent
           issues={issues}
           onMapClick={handleMapClick}
@@ -382,17 +400,25 @@ export default function UserDashboard() {
         </div>
       )}
 
-      {/* Floating Draggable Sidebar */}
+      {/* Floating Draggable Sidebar / Bottom Sheet */}
       <div 
-        style={{ left: `${sidebarPos.x}px`, top: `${sidebarPos.y}px`, cursor: isDragging ? 'grabbing' : 'auto' }}
-        className="fixed w-[320px] max-h-[calc(100vh-48px)] z-[2000] glass flex flex-col shadow-2xl rounded-[32px] overflow-hidden select-none"
+        style={{ 
+          left: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.x}px` : '0', 
+          top: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.y}px` : 'auto', 
+          cursor: isDragging ? 'grabbing' : 'auto' 
+        }}
+        className="fixed md:w-[320px] w-full bottom-0 md:bottom-auto z-[2000] glass flex flex-col shadow-2xl rounded-t-[32px] md:rounded-[32px] overflow-hidden select-none max-h-[75vh] md:max-h-[calc(100vh-48px)] animate-in slide-in-from-bottom-10 duration-500"
       >
 
         {/* Header (Drag Handle) */}
         <div 
           onMouseDown={handleMouseDown}
-          className="px-5 py-4 border-b border-white/5 flex justify-between items-center bg-surface/30 backdrop-blur-xl cursor-grab active:cursor-grabbing"
+          className="px-5 pt-3 pb-4 md:py-4 border-b border-white/5 flex flex-col bg-surface/30 backdrop-blur-xl cursor-grab active:cursor-grabbing"
         >
+          {/* Mobile Drag Handle */}
+          <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-4 md:hidden" />
+          
+          <div className="flex justify-between items-center">
           <div>
             <h1 className="font-heading text-lg font-black text-white tracking-tight flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
@@ -411,23 +437,24 @@ export default function UserDashboard() {
             </button>
           </div>
         </div>
+      </div>
 
         {/* Tabs - Smaller */}
-        <div className="flex p-3 gap-1.5 border-b border-white/5">
+        <div className="flex p-3 gap-2 border-b border-white/5">
           <button
             onClick={() => { setActiveTab('submit'); setFormStep(1); }}
-            className={`flex-1 py-2 px-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
+            className={`flex-1 min-h-[44px] py-2 px-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
               }`}
           >
-            <PlusCircle size={14} />
+            <PlusCircle size={16} />
             Report Issue
           </button>
           <button
             onClick={() => setActiveTab('list')}
-            className={`flex-1 py-2 px-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all ${activeTab === 'list' ? 'bg-surface text-white border border-white/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
+            className={`flex-1 min-h-[44px] py-2 px-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all ${activeTab === 'list' ? 'bg-surface text-white border border-white/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
               }`}
           >
-            <List size={14} />
+            <List size={16} />
             My Reports ({userIssues.length})
           </button>
         </div>
@@ -765,10 +792,10 @@ export default function UserDashboard() {
         )}
       </div>
 
-      {/* My Account Button - Top Left */}
+      {/* My Account Button - Hidden on Mobile (moved to header) */}
       <button 
         onClick={() => setIsProfileOpen(true)}
-        className="fixed top-4 left-4 z-[3000] flex items-center gap-2 px-3 py-2 bg-surface/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl hover:bg-surface transition-all group"
+        className="hidden md:flex fixed top-4 left-4 z-[3000] items-center gap-2 px-3 py-2 bg-surface/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl hover:bg-surface transition-all group"
       >
         <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
           <UserCircle2 size={20} />
