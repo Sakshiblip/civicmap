@@ -17,18 +17,27 @@ const wards = [
 
 export default function AnalyticsPanel({ issues, isOpen, onClose }: AnalyticsPanelProps) {
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+  const [timeFilter, setTimeFilter] = useState<'7d' | '30d' | 'all'>('all');
 
-  const filteredIssues = useMemo(() => {
-    if (activeFilter === 'all') return issues;
-    return issues.filter(i => i.status === activeFilter);
-  }, [issues, activeFilter]);
+  const timeFilteredIssues = useMemo(() => {
+    if (timeFilter === 'all') return issues;
+    const now = new Date();
+    const days = timeFilter === '7d' ? 7 : 30;
+    const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    return issues.filter(i => new Date(i.created_at) >= cutoff);
+  }, [issues, timeFilter]);
+
+  const categoryFilteredIssues = useMemo(() => {
+    if (activeFilter === 'all') return timeFilteredIssues;
+    return timeFilteredIssues.filter(i => i.status === activeFilter);
+  }, [timeFilteredIssues, activeFilter]);
 
   const wardStats = useMemo(() => {
     // Group issues by a mock ward (derived from index for demo)
     const stats: Record<string, number> = {};
     wards.forEach(ward => (stats[ward] = 0));
     
-    filteredIssues.forEach((issue) => {
+    categoryFilteredIssues.forEach((issue) => {
       const wardIndex = (issue.lat + issue.lng) % wards.length; // Deterministic mock
       const wardName = wards[Math.floor(wardIndex)];
       stats[wardName] = (stats[wardName] || 0) + 1;
@@ -37,10 +46,10 @@ export default function AnalyticsPanel({ issues, isOpen, onClose }: AnalyticsPan
     return Object.entries(stats)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
-  }, [filteredIssues]);
+  }, [categoryFilteredIssues]);
 
-  const hottestWard = wardStats[0]?.name || 'N/A';
-  const lastReported = issues.length > 0 ? format(new Date(issues[0].created_at), 'h:mm a') : 'N/A';
+  const hottestWard = wardStats[0]?.count > 0 ? wardStats[0].name : 'N/A';
+  const lastReported = timeFilteredIssues.length > 0 ? format(new Date(timeFilteredIssues[0].created_at), 'h:mm a') : 'N/A';
 
   const exportCSV = () => {
     const headers = ['ID', 'Type', 'Status', 'Lat', 'Lng', 'Created At'];
@@ -72,9 +81,19 @@ export default function AnalyticsPanel({ issues, isOpen, onClose }: AnalyticsPan
                 <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Live density data</p>
               </div>
            </div>
-           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white/40 hover:text-white transition-all group">
-             <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-           </button>
+           <div className="flex items-center gap-2">
+              <button 
+                onClick={exportCSV}
+                className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-white hover:text-accent transition-all uppercase tracking-wider"
+                title="Export Data Cluster"
+              >
+                <Download size={14} />
+                <span className="hidden sm:inline">Export CSV</span>
+              </button>
+              <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white/40 hover:text-white transition-all group">
+                <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              </button>
+            </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 styled-scrollbar space-y-8">
@@ -82,12 +101,12 @@ export default function AnalyticsPanel({ issues, isOpen, onClose }: AnalyticsPan
            <div className="grid grid-cols-3 gap-3">
               <div className="premium-card p-3.5 bg-white/5 border-white/10 text-center flex flex-col items-center justify-center gap-2">
                  <AlertTriangle size={16} className="text-orange-500" />
-                 <div className="text-2xl font-black text-white font-mono leading-none tracking-tighter">{issues.length}</div>
+                 <div className="text-2xl font-black text-white font-mono leading-none tracking-tighter">{timeFilteredIssues.length}</div>
                  <div className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Total</div>
               </div>
-              <div className="premium-card p-3.5 bg-white/5 border-white/10 text-center flex flex-col items-center justify-center gap-2">
+              <div className="premium-card p-3.5 bg-white/5 border-white/10 text-center flex flex-col items-center justify-center gap-2 overflow-hidden">
                  <TrendingUp size={16} className="text-emerald-500" />
-                 <div className="text-[10px] font-black text-white leading-none truncate max-w-full font-mono">{hottestWard.split(' ')[0]}</div>
+                 <div className="text-[9px] font-black text-white leading-tight font-mono whitespace-normal h-6 flex items-center justify-center uppercase">{hottestWard}</div>
                  <div className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Hottest</div>
               </div>
               <div className="premium-card p-3.5 bg-white/5 border-white/10 text-center flex flex-col items-center justify-center gap-2">
@@ -105,16 +124,34 @@ export default function AnalyticsPanel({ issues, isOpen, onClose }: AnalyticsPan
                    Categorization
                 </div>
               </div>
-              <div className="flex p-1 bg-surface/50 rounded-2xl border border-white/10 backdrop-blur-xl">
-                 {['all', 'pending', 'resolved'].map(f => (
-                   <button
-                     key={f}
-                     onClick={() => setActiveFilter(f as any)}
-                     className={`flex-1 py-2 px-3 rounded-xl font-bold text-[10px] transition-all uppercase tracking-widest ${activeFilter === f ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'text-white/40 hover:text-white/60'}`}
-                   >
-                     {f === 'all' ? 'Pulse' : f}
-                   </button>
-                 ))}
+              <div className="flex flex-col gap-2">
+                <div className="flex p-1 bg-surface/50 rounded-2xl border border-white/10 backdrop-blur-xl">
+                   {['all', 'pending', 'resolved'].map(f => (
+                     <button
+                       key={f}
+                       onClick={() => setActiveFilter(f as any)}
+                       className={`flex-1 py-2 px-3 rounded-xl font-bold text-[10px] transition-all uppercase tracking-widest ${activeFilter === f ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'text-white/40 hover:text-white/60'}`}
+                     >
+                       {f === 'all' ? 'Pulse' : f}
+                     </button>
+                   ))}
+                </div>
+
+                <div className="flex p-0.5 bg-surface/30 rounded-xl border border-white/5 backdrop-blur-md gap-1">
+                   {[
+                     { id: '7d', label: '7 Days' },
+                     { id: '30d', label: '30 Days' },
+                     { id: 'all', label: 'All Time' }
+                   ].map(t => (
+                     <button
+                       key={t.id}
+                       onClick={() => setTimeFilter(t.id as any)}
+                       className={`flex-1 py-1 px-2 rounded-lg font-bold text-[9px] transition-all uppercase tracking-wider ${timeFilter === t.id ? 'bg-white/10 text-white shadow-sm' : 'text-white/30 hover:text-white/50'}`}
+                     >
+                       {t.label}
+                     </button>
+                   ))}
+                </div>
               </div>
            </div>
 
@@ -146,16 +183,8 @@ export default function AnalyticsPanel({ issues, isOpen, onClose }: AnalyticsPan
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-white/10 bg-surface/40 backdrop-blur-xl">
-           <button 
-             onClick={exportCSV}
-             className="w-full py-4 bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background font-black rounded-2xl flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-accent/30 group text-xs uppercase"
-           >
-             <Download size={16} className="transition-transform group-hover:translate-y-1" />
-             Export Data Cluster (.csv)
-             <ArrowRight size={14} className="ml-1 opacity-50 transition-transform group-hover:translate-x-1" />
-           </button>
-           <p className="text-center text-[9px] text-white/30 uppercase tracking-[0.2em] mt-4 font-mono">NagarSeva OpenData v2.1</p>
+        <div className="py-4 px-6 border-t border-white/10 bg-surface/40 backdrop-blur-xl flex flex-col items-center">
+           <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-mono">NagarSeva OpenData v2.1</p>
         </div>
       </div>
     </div>
