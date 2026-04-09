@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { BarChart2, X, AlertTriangle, TrendingUp, Clock, MapPin, Filter, Download, ArrowRight } from 'lucide-react';
+import { BarChart2, X, AlertTriangle, TrendingUp, Clock, MapPin, Filter, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Issue } from '../lib/supabase';
 
