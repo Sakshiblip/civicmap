@@ -8,12 +8,7 @@ import { format } from 'date-fns';
 import SearchBar from './SearchBar';
 import AnalyticsPanel from './AnalyticsPanel';
 import LayerControlPanel from './LayerControlPanel';
-import { 
-  MapPin, List, PlusCircle, CheckCircle, Navigation, 
-  Search, Menu, X, Globe, Clock, Briefcase, Camera, 
-  ChevronRight, Send, LogOut, ArrowUpRight, ArrowRight,
-  Loader2, ImageIcon, Share2
-} from 'lucide-react';
+import { MapPin, List, PlusCircle, CheckCircle, Navigation, Search, Menu, X, Globe, Clock, Briefcase, Camera, ChevronRight, Send, LogOut, ArrowUpRight, ArrowRight, Loader2, ImageIcon, Share2 } from 'lucide-react';
 import ProfileSidebar from './ProfileSidebar';
 
 export default function UserDashboard() {
