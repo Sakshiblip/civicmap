@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { 
@@ -16,8 +16,6 @@ import {
   Search,
   ArrowUpDown,
   Filter,
-  CheckCircle2,
-  AlertCircle,
   Clock,
   Briefcase,
   Download,
@@ -47,6 +45,7 @@ interface Issue {
   lng: number;
   image_urls: string[];
   email: string;
+  user_id?: string;
 }
 
 export default function AdminDashboard() {
