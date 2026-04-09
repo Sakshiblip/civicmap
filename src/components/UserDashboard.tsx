@@ -8,7 +8,12 @@ import { format } from 'date-fns';
 import SearchBar from './SearchBar';
 import AnalyticsPanel from './AnalyticsPanel';
 import LayerControlPanel from './LayerControlPanel';
-import { LogOut, PlusCircle, List, MapPin, Image as ImageIcon, Send, Navigation, Clock, CheckCircle, ArrowRight, Loader2, Share2, UserCircle2 } from 'lucide-react';
+import { 
+  MapPin, List, PlusCircle, CheckCircle, Navigation, 
+  Search, Menu, X, Globe, Clock, Briefcase, Camera, 
+  ChevronRight, Send, LogOut, ArrowUpRight, ArrowRight,
+  Loader2
+} from 'lucide-react';
 import ProfileSidebar from './ProfileSidebar';
 
 export default function UserDashboard() {
@@ -47,7 +52,7 @@ export default function UserDashboard() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [dailyIssueCount, setDailyIssueCount] = useState(0);
   const [formStep, setFormStep] = useState(1);
-  const [sidebarPos, setSidebarPos] = useState({ x: 24, y: 24 });
+  const [sidebarPos, setSidebarPos] = useState({ x: 24, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const objectUrlsRef = useRef<string[]>([]);
@@ -296,7 +301,7 @@ export default function UserDashboard() {
       if (!isDragging) return;
       setSidebarPos({
         x: e.clientX - dragOffset.x,
-        y: Math.max(24, e.clientY - dragOffset.y)
+        y: Math.max(100, e.clientY - dragOffset.y)
       });
     };
 
@@ -314,10 +319,29 @@ export default function UserDashboard() {
     };
   }, [isDragging, dragOffset]);
 
-  const userIssues = issues.filter(i => i.email === user?.email); // Filter them in frontend for the list
+  const userIssues = issues.filter(i => i.email === user?.email);
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
+      
+      {/* Action Icons Panel */}
+      <div className="fixed top-3 left-3 z-50 flex items-center gap-2 bg-gray-900 rounded-xl shadow-lg px-3 py-2">
+        <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+        <button 
+          onClick={logout} 
+          className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500/20 transition-all" 
+          title="Logout"
+        >
+          <LogOut size={16} />
+        </button>
+        <button 
+          onClick={() => setIsProfileOpen(true)}
+          className="px-3 py-1.5 bg-accent/10 hover:bg-accent/20 border border-accent/20 rounded-lg text-accent text-[9px] font-black uppercase tracking-widest transition-all"
+        >
+          My Account
+        </button>
+      </div>
+
       {/* Map Section (Full screen) */}
       <div className="relative md:absolute inset-0 z-0 flex-1">
         <MapComponent
@@ -393,26 +417,6 @@ export default function UserDashboard() {
         >
           {/* Mobile Drag Handle */}
           <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-4 md:hidden" />
-          
-          {/* Header Action Row */}
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <div className="flex items-center gap-2">
-              <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
-              <button 
-                onClick={logout} 
-                className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500/20 transition-all" 
-                title="Logout"
-              >
-                <LogOut size={16} />
-              </button>
-            </div>
-            <button 
-              onClick={() => setIsProfileOpen(true)}
-              className="px-3 py-1.5 bg-accent/10 hover:bg-accent/20 border border-accent/20 rounded-lg text-accent text-[9px] font-black uppercase tracking-widest transition-all"
-            >
-              My Account
-            </button>
-          </div>
           
           <div className="hidden md:block">
             <h1 className="font-heading text-lg font-black text-white tracking-tight flex items-center gap-2">
