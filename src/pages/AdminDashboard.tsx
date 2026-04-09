@@ -45,7 +45,7 @@ interface Issue {
   lng: number;
   image_urls: string[];
   email: string;
-  user_id?: string;
+  user_id: string;
 }
 
 export default function AdminDashboard() {
