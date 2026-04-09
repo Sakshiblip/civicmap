@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from './lib/AuthContext';
 import { supabase } from './lib/supabase';
 import Auth from './components/Auth';
 import UserDashboard from './components/UserDashboard';
-import AdminDashboard from './components/AdminDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import ResetPassword from './components/ResetPassword';
 import PublicIssueView from './components/PublicIssueView';
 

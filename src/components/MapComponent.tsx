@@ -261,8 +261,11 @@ export default function MapComponent({
                   {issue.description}
                 </p>
                 {issue.image_urls && issue.image_urls.length > 0 && (
-                  <div className="w-full h-24 rounded-lg overflow-hidden bg-white/10 mt-2">
-                    <img src={issue.image_urls[0]} alt="Issue" className="w-full h-full object-cover" />
+                  <div className="mt-3 space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Photo</span>
+                    <div className="rounded-lg overflow-hidden border border-white/10 bg-white/5 max-w-[200px]">
+                      <img src={issue.image_urls[0]} alt="Issue" className="w-full h-auto" />
+                    </div>
                   </div>
                 )}
               </div>
