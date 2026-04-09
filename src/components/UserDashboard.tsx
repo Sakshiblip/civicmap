@@ -47,7 +47,7 @@ export default function UserDashboard() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [dailyIssueCount, setDailyIssueCount] = useState(0);
   const [formStep, setFormStep] = useState(1);
-  const [sidebarPos, setSidebarPos] = useState({ x: 24, y: 80 });
+  const [sidebarPos, setSidebarPos] = useState({ x: 24, y: 24 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const objectUrlsRef = useRef<string[]>([]);
@@ -296,7 +296,7 @@ export default function UserDashboard() {
       if (!isDragging) return;
       setSidebarPos({
         x: e.clientX - dragOffset.x,
-        y: Math.max(80, e.clientY - dragOffset.y)
+        y: Math.max(24, e.clientY - dragOffset.y)
       });
     };
 
@@ -318,32 +318,6 @@ export default function UserDashboard() {
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
-      {/* Fixed Top Navbar */}
-      <div className="fixed top-0 left-0 right-0 h-14 bg-surface/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 z-[4000] shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
-            <MapPin size={18} className="text-accent" />
-          </div>
-          <h1 className="text-sm font-black text-white uppercase tracking-tighter">NagarSeva</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
-          <button 
-            onClick={logout} 
-            className="w-10 h-10 flex items-center justify-center bg-red-500/10 rounded-full text-red-400 shadow-lg shadow-red-500/20 ring-1 ring-red-500/20 hover:bg-red-500/20 transition-all group" 
-            title="Logout"
-          >
-            <LogOut size={20} className="transition-transform group-hover:scale-110" />
-          </button>
-          <button 
-            onClick={() => setIsProfileOpen(true)} 
-            className="w-10 h-10 flex items-center justify-center bg-accent/10 rounded-full text-accent shadow-lg shadow-accent/20 ring-1 ring-accent/20 hover:bg-accent/20 transition-all"
-            title="Profile"
-          >
-            <UserCircle2 size={24} />
-          </button>
-        </div>
-      </div>
       {/* Map Section (Full screen) */}
       <div className="relative md:absolute inset-0 z-0 flex-1">
         <MapComponent
@@ -420,6 +394,26 @@ export default function UserDashboard() {
           {/* Mobile Drag Handle */}
           <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-4 md:hidden" />
           
+          {/* Header Action Row */}
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+              <button 
+                onClick={logout} 
+                className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500/20 transition-all" 
+                title="Logout"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+            <button 
+              onClick={() => setIsProfileOpen(true)}
+              className="px-3 py-1.5 bg-accent/10 hover:bg-accent/20 border border-accent/20 rounded-lg text-accent text-[9px] font-black uppercase tracking-widest transition-all"
+            >
+              My Account
+            </button>
+          </div>
+          
           <div className="hidden md:block">
             <h1 className="font-heading text-lg font-black text-white tracking-tight flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
@@ -460,6 +454,24 @@ export default function UserDashboard() {
               <Navigation size={12} className="text-accent/50" />
               Double-click map to drop a pin.
             </p>
+          </div>
+        )}
+
+        {/* Inline Legend */}
+        {activeTab === 'submit' && (
+          <div className="px-5 py-2.5 flex items-center gap-4 bg-white/[0.02] border-y border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Pending</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">In Progress</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Resolved</span>
+            </div>
           </div>
         )}
 

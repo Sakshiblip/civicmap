@@ -167,10 +167,10 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
       )}
 
       {/* Sidebar Panel */}
-      <div className={`fixed top-0 left-0 h-fit max-h-screen w-[320px] bg-background border-r border-b border-white/5 z-[5000] shadow-2xl transition-transform duration-500 ease-in-out transform rounded-br-3xl ${
+      <div className={`fixed top-0 left-0 h-screen w-[320px] bg-background border-r border-white/5 z-[5000] shadow-2xl transition-transform duration-500 ease-in-out transform overflow-y-auto styled-scrollbar ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="flex flex-col h-fit">
+        <div className="flex flex-col h-full">
           
           {/* Header */}
           <div className="p-6 border-b border-white/5 relative">

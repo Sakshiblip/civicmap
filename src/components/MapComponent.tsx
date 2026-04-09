@@ -275,7 +275,6 @@ export default function MapComponent({
           </Marker>
         ))}
 
-        <MapLegend />
         <LocateMeControl 
           onLocateMe={onLocateMe}
           userLocation={userLocation}
@@ -285,29 +284,7 @@ export default function MapComponent({
   );
 }
 
-function MapLegend() {
-  return (
-    <div className="leaflet-bottom leaflet-left mb-6 ml-6">
-      <div className="leaflet-control pointer-events-auto">
-        <div className="glass-card p-3 flex flex-col gap-2.5 min-w-[130px] shadow-2xl border border-white/5 animate-in slide-in-from-left-4 duration-500">
-          <h4 className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Live Status</h4>
-          <div className="flex items-center gap-2.5 text-[11px] font-bold text-white/80 uppercase tracking-wider">
-            <div className="w-3 h-3 rounded-full bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-            <span>Pending</span>
-          </div>
-          <div className="flex items-center gap-2.5 text-[11px] font-bold text-white/80 uppercase tracking-wider">
-            <div className="w-3 h-3 rounded-full bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-            <span>In Progress</span>
-          </div>
-          <div className="flex items-center gap-2.5 text-[11px] font-bold text-white/80 uppercase tracking-wider">
-            <div className="w-3 h-3 rounded-full bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-            <span>Resolved</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 function LocateMeControl({ onLocateMe, userLocation }: { onLocateMe?: () => void, userLocation?: [number, number] | null }) {
   const map = useMap();
