@@ -40,8 +40,13 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
 
   useEffect(() => {
     if (isOpen) {
-      if (activeAccordion === 'reports') fetchMyIssues();
-      if (activeAccordion === 'data') fetchLoginHistory();
+      fetchMyIssues();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && activeAccordion === 'data') {
+      fetchLoginHistory();
     }
   }, [isOpen, activeAccordion]);
 
@@ -162,10 +167,10 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
       )}
 
       {/* Sidebar Panel */}
-      <div className={`fixed top-0 left-0 h-full w-[320px] bg-background border-r border-white/5 z-[5000] shadow-2xl transition-transform duration-500 ease-in-out transform ${
+      <div className={`fixed top-0 left-0 h-fit max-h-screen w-[320px] bg-background border-r border-b border-white/5 z-[5000] shadow-2xl transition-transform duration-500 ease-in-out transform rounded-br-3xl ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-fit">
           
           {/* Header */}
           <div className="p-6 border-b border-white/5 relative">
@@ -184,6 +189,9 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
                 {displayName}
               </h2>
               <p className="text-xs text-white/40 font-mono mt-1">{user?.email}</p>
+              <p className="text-[10px] font-bold text-accent mt-2 bg-accent/5 px-2 py-0.5 rounded-full border border-accent/10">
+                {myIssues.length} reports filed · {myIssues.filter(i => i.status === 'resolved').length} resolved
+              </p>
             </div>
           </div>
 
@@ -200,7 +208,7 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
           )}
 
           {/* Accordion Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 mt-2 styled-scrollbar">
+          <div className="p-4 space-y-2 mt-2">
             
             {/* Edit Profile */}
             <div className="space-y-1">
@@ -340,7 +348,7 @@ export default function ProfileSidebar({ user, isOpen, onClose, displayName, set
                   <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
                     <BarChart2 size={18} />
                   </div>
-                  <span className="text-sm font-bold text-white/80">My Data</span>
+                  <span className="text-sm font-bold text-white/80">Data & Privacy</span>
                 </div>
                 {activeAccordion === 'data' ? <ChevronDown size={14} className="text-white/40" /> : <ChevronRight size={14} className="text-white/40" />}
               </button>
