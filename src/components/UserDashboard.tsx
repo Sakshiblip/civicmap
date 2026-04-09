@@ -12,7 +12,7 @@ import {
   MapPin, List, PlusCircle, CheckCircle, Navigation, 
   Search, Menu, X, Globe, Clock, Briefcase, Camera, 
   ChevronRight, Send, LogOut, ArrowUpRight, ArrowRight,
-  Loader2
+  Loader2, ImageIcon, Share2
 } from 'lucide-react';
 import ProfileSidebar from './ProfileSidebar';
 
