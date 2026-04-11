@@ -66,7 +66,7 @@ export default function UserDashboard() {
   const [selectedAddress, setSelectedAddress] = useState<string>('');
   const [isLocating, setIsLocating] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [_sheetExpanded, _setSheetExpanded] = useState(false);
 
   const baseLayerUrls = {
     osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -308,7 +308,7 @@ export default function UserDashboard() {
     setFlyTo([lat, lng]);
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const _handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setDragOffset({
       x: e.clientX - sidebarPos.x,
