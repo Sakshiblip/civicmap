@@ -104,8 +104,6 @@ interface MapComponentProps {
   selectedLocation?: [number, number] | null; // For centering map
   draftPin?: [number, number] | null; // During submission
   userLocation?: [number, number] | null; // Current user position
-  currentUserId?: string;
-  isAdmin?: boolean;
   showFilters?: boolean;
   compactFilters?: boolean;
   baseLayerUrl?: string;
@@ -128,8 +126,6 @@ export default function MapComponent({
   selectedLocation, 
   draftPin, 
   userLocation,
-  _currentUserId, 
-  _isAdmin,
   showFilters = true,
   compactFilters = false,
   baseLayerUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',

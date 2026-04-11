@@ -47,9 +47,6 @@ export default function UserDashboard() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [dailyIssueCount, setDailyIssueCount] = useState(0);
   const [formStep, setFormStep] = useState(1);
-  const [sidebarPos, setSidebarPos] = useState({ x: 24, y: 100 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const objectUrlsRef = useRef<string[]>([]);
 
   // Map Controls State
@@ -66,7 +63,6 @@ export default function UserDashboard() {
   const [selectedAddress, setSelectedAddress] = useState<string>('');
   const [isLocating, setIsLocating] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [_sheetExpanded, _setSheetExpanded] = useState(false);
 
   const baseLayerUrls = {
     osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -308,37 +304,6 @@ export default function UserDashboard() {
     setFlyTo([lat, lng]);
   };
 
-  const _handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragOffset({
-      x: e.clientX - sidebarPos.x,
-      y: e.clientY - sidebarPos.y
-    });
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      setSidebarPos({
-        x: e.clientX - dragOffset.x,
-        y: Math.max(100, e.clientY - dragOffset.y)
-      });
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset]);
-
   const userIssues = issues.filter(i => i.email === user?.email);
 
   return (
@@ -371,7 +336,6 @@ export default function UserDashboard() {
           draftPin={draftLocation}
           selectedLocation={flyTo}
           userLocation={userLocation}
-          currentUserId={user?.id}
           baseLayerUrl={baseLayerUrls['osm']}
           showHeatmap={overlays.heatmap}
         />
@@ -423,9 +387,9 @@ export default function UserDashboard() {
       {/* Floating Draggable Sidebar / Bottom Sheet */}
       <div 
         style={{ 
-          left: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.x}px` : '0', 
-          top: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.y}px` : 'auto', 
-          cursor: isDragging ? 'grabbing' : 'auto',
+          left: typeof window !== 'undefined' && window.innerWidth >= 768 ? '24px' : '0', 
+          top: typeof window !== 'undefined' && window.innerWidth >= 768 ? '100px' : 'auto', 
+          cursor: 'auto',
           transform: !sheetOpen && typeof window !== 'undefined' && window.innerWidth < 768 ? 'translateY(calc(100% - 72px))' : 'translateY(0)',
           transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), left 0.1s, top 0.1s'
         }}
