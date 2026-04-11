@@ -45,7 +45,7 @@ function MapEvents({
   setRipple: (pos: [number, number] | null) => void
 }) {
   const map = useMap();
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   useMapEvents({
     mousedown(e: L.LeafletMouseEvent) {
@@ -63,19 +63,6 @@ function MapEvents({
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
     },
     mousemove() {
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    },
-    touchstart(e: any) {
-      if (onMapClick) {
-        longPressTimer.current = setTimeout(() => {
-          const latlng = map.mouseEventToLatLng(e.originalEvent.touches[0]);
-          onMapClick(latlng.lat, latlng.lng);
-          setRipple([latlng.lat, latlng.lng]);
-          setTimeout(() => setRipple(null), 800);
-        }, 600);
-      }
-    },
-    touchend() {
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
     },
     dblclick(e: L.LeafletMouseEvent) {
