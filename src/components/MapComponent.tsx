@@ -104,6 +104,7 @@ interface MapComponentProps {
   selectedLocation?: [number, number] | null; // For centering map
   draftPin?: [number, number] | null; // During submission
   userLocation?: [number, number] | null; // Current user position
+  isAdmin?: boolean;
   showFilters?: boolean;
   compactFilters?: boolean;
   baseLayerUrl?: string;
