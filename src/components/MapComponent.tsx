@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Navigation, Filter, ChevronDown } from 'lucide-react';
@@ -60,8 +60,9 @@ function MapEvents({
 
     map.on('click', handleClick);
 
-    map.on('touchstart', (e: L.LeafletTouchEvent) => {
-      touchLatLng = e.latlng;
+    map.on('touchstart', (e: L.LeafletEvent) => {
+      const touch = e as L.LeafletMouseEvent;
+      touchLatLng = touch.latlng;
       longPressTimer = setTimeout(() => {
         if (touchLatLng) {
           onMapClick(touchLatLng.lat, touchLatLng.lng);
