@@ -45,51 +45,53 @@ function MapEvents({
   setRipple: (pos: [number, number] | null) => void
 }) {
   const map = useMap();
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
   useEffect(() => {
-    const handleTouchStart = (e: any) => {
-      if (windowWidth < 640) { // Mobile
-        const latlng = e.latlng;
-        longPressTimer.current = setTimeout(() => {
-          if (onMapClick && latlng) {
-            onMapClick(latlng.lat, latlng.lng);
-            setRipple([latlng.lat, latlng.lng]);
-            setTimeout(() => setRipple(null), 800);
-          }
-        }, 600);
-      }
-    };
+    if (!map || !onMapClick) return;
 
-    const handleTouchEnd = () => {
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    };
+    let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    let touchLatLng: L.LatLng | null = null;
 
-    const handleTouchMove = () => {
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    };
-
-    map.on('touchstart', handleTouchStart);
-    map.on('touchend', handleTouchEnd);
-    map.on('touchmove', handleTouchMove);
-
-    return () => {
-      map.off('touchstart', handleTouchStart);
-      map.off('touchend', handleTouchEnd);
-      map.off('touchmove', handleTouchMove);
-    };
-  }, [map, windowWidth, onMapClick, setRipple]);
-
-  useMapEvents({
-    click(e: L.LeafletMouseEvent) {
+    const handleClick = (e: L.LeafletMouseEvent) => {
       if (windowWidth >= 640) { // Desktop
         map.closePopup();
-        if (onMapClick) {
-          onMapClick(e.latlng.lat, e.latlng.lng);
-        }
+        onMapClick(e.latlng.lat, e.latlng.lng);
       }
-    }
-  });
+    };
+
+    map.on('click', handleClick);
+
+    map.on('touchstart', (e: L.LeafletTouchEvent) => {
+      touchLatLng = e.latlng;
+      longPressTimer = setTimeout(() => {
+        if (touchLatLng) {
+          onMapClick(touchLatLng.lat, touchLatLng.lng);
+          setRipple([touchLatLng.lat, touchLatLng.lng]);
+          setTimeout(() => setRipple(null), 800);
+        }
+      }, 600);
+    });
+
+    map.on('touchend', () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    });
+
+    map.on('touchmove', () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    });
+
+    return () => {
+      map.off('click', handleClick);
+      map.off('touchstart');
+      map.off('touchend');
+      map.off('touchmove');
+    };
+  }, [map, windowWidth, onMapClick, setRipple]);
   return null;
 }
 
