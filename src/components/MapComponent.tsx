@@ -48,38 +48,31 @@ function MapEvents({
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   useMapEvents({
-    mousedown(e: L.LeafletMouseEvent) {
-      if (windowWidth < 640) { // Mobile
-        longPressTimer.current = setTimeout(() => {
-          if (onMapClick) {
-            onMapClick(e.latlng.lat, e.latlng.lng);
-            setRipple([e.latlng.lat, e.latlng.lng]);
-            setTimeout(() => setRipple(null), 800);
-          }
-        }, 600);
-      }
-    },
-    mouseup() {
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    },
-    mousemove() {
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    },
-    dblclick(e: L.LeafletMouseEvent) {
+    click(e: L.LeafletMouseEvent) {
       if (windowWidth >= 640) { // Desktop
-        if (e.originalEvent) {
-            e.originalEvent.preventDefault();
-            e.originalEvent.stopPropagation();
-        }
-        
         map.closePopup();
         if (onMapClick) {
           onMapClick(e.latlng.lat, e.latlng.lng);
         }
       }
     },
-    click() {
-        // Single click does nothing as per requirements
+    touchstart(e: any) {
+      if (windowWidth < 640) { // Mobile
+        const latlng = e.latlng;
+        longPressTimer.current = setTimeout(() => {
+          if (onMapClick && latlng) {
+            onMapClick(latlng.lat, latlng.lng);
+            setRipple([latlng.lat, latlng.lng]);
+            setTimeout(() => setRipple(null), 800);
+          }
+        }, 600);
+      }
+    },
+    touchend() {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    },
+    touchmove() {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
     }
   });
   return null;
@@ -164,7 +157,7 @@ export default function MapComponent({
         className="w-full h-full"
         dragging={interactive}
         scrollWheelZoom={interactive}
-        doubleClickZoom={false} // Disabled as per requirements to allow pin drop on dblclick
+        doubleClickZoom={false} // Disabled to prioritize pin dropping and map interaction
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'

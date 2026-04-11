@@ -444,7 +444,7 @@ export default function UserDashboard() {
               <div className="px-5 pt-3">
                 <p className="text-xs text-white/40 font-medium flex items-center gap-2">
                   <Navigation size={12} className="text-accent/50" />
-                  Double-click map to drop a pin.
+                  Tap & hold map to drop a pin.
                 </p>
               </div>
             )}
