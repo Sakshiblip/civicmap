@@ -65,7 +65,7 @@ export default function UserDashboard() {
   const [submittedIssue, setSubmittedIssue] = useState<Issue | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string>('');
   const [isLocating, setIsLocating] = useState(false);
-  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
 
   const baseLayerUrls = {
     osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -425,7 +425,7 @@ export default function UserDashboard() {
           left: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.x}px` : '0', 
           top: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.y}px` : 'auto', 
           cursor: isDragging ? 'grabbing' : 'auto',
-          transform: !isSheetExpanded && typeof window !== 'undefined' && window.innerWidth < 768 ? 'translateY(calc(100% - 120px))' : 'translateY(0)',
+          transform: !sheetExpanded && typeof window !== 'undefined' && window.innerWidth < 768 ? 'translateY(calc(100% - 120px))' : 'translateY(0)',
           transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), left 0.1s, top 0.1s'
         }}
         className="fixed md:w-[320px] w-full bottom-0 md:bottom-auto z-[2000] glass flex flex-col shadow-2xl rounded-t-[32px] md:rounded-[32px] overflow-hidden select-none max-h-[75vh] md:max-h-[calc(100vh-48px)] animate-in slide-in-from-bottom-10 duration-500"
@@ -433,8 +433,9 @@ export default function UserDashboard() {
 
         {/* Header (Drag Handle) */}
         <div 
-          onMouseDown={(e) => { handleMouseDown(e); setIsSheetExpanded(true); }}
-          onTouchStart={() => setIsSheetExpanded(true)}
+          onClick={() => { if (typeof window !== 'undefined' && window.innerWidth < 768) setSheetExpanded(!sheetExpanded); }}
+          onMouseDown={(e) => { handleMouseDown(e); if (typeof window !== 'undefined' && window.innerWidth < 768) setSheetExpanded(true); }}
+          onTouchStart={() => { if (typeof window !== 'undefined' && window.innerWidth < 768) setSheetExpanded(true); }}
           className="px-5 pt-3 pb-4 md:py-4 border-b border-white/5 flex flex-col bg-surface/30 backdrop-blur-xl cursor-grab active:cursor-grabbing"
         >
           {/* Mobile Drag Handle */}
@@ -456,7 +457,7 @@ export default function UserDashboard() {
         {/* Tabs - Smaller */}
         <div className="flex items-center p-3 gap-4 border-b border-white/5">
           <button
-            onClick={() => { setActiveTab('submit'); setFormStep(1); setIsSheetExpanded(true); }}
+            onClick={() => { setActiveTab('submit'); setFormStep(1); setSheetExpanded(true); }}
             className={`flex-1 h-10 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
               }`}
           >
@@ -474,7 +475,7 @@ export default function UserDashboard() {
         </div>
 
         {/* Instruction Banner - Compact */}
-        {activeTab === 'submit' && (
+        {(activeTab === 'submit' && (sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768))) && (
           <div className="px-5 pt-3">
             <p className="text-xs text-white/40 font-medium flex items-center gap-2">
               <Navigation size={12} className="text-accent/50" />
@@ -484,7 +485,7 @@ export default function UserDashboard() {
         )}
 
         {/* Inline Legend */}
-        {activeTab === 'submit' && (
+        {(activeTab === 'submit' && (sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768))) && (
           <div className="px-5 py-2.5 flex items-center gap-4 bg-white/[0.02] border-y border-white/5">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
@@ -507,8 +508,9 @@ export default function UserDashboard() {
           {/* Community Pulse Section Removed */}
 
           {/* Stepper Component - Smaller */}
-          {activeTab === 'submit' && (
+          {(activeTab === 'submit' && (sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768))) && (
             <div className="px-8 pt-4 pb-2">
+              {/* Stepper logic */}
               <div className="relative flex justify-between gap-4">
                 {/* Stepper Progress Lines */}
                 <div className="stepper-line w-full" />
@@ -547,61 +549,65 @@ export default function UserDashboard() {
                 {formStep === 1 && (
                   <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
                     <div className="space-y-3">
-                      <div 
-                        className={`premium-card p-3 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${
-                          draftLocation ? 'scale-[1.01] border-accent/20 glow-accent' : 'opacity-80'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <label className="text-[9px] font-black text-accent uppercase tracking-[0.2em] font-mono">
-                            Selected Location
-                          </label>
-                          {draftLocation && (
-                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
-                              <div className="w-1 h-1 bg-accent rounded-full animate-pulse" />
-                              <span className="text-[8px] font-bold text-accent uppercase tracking-wider">High precision</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 min-h-[36px] flex items-center">
-                            {isLocating ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 size={14} className="animate-spin text-accent" />
-                                <span className="text-sm text-white/50 font-medium italic">Locating...</span>
+                      {(sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768)) && (
+                        <div 
+                          className={`premium-card p-3 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${
+                            draftLocation ? 'scale-[1.01] border-accent/20 glow-accent' : 'opacity-80'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <label className="text-[9px] font-black text-accent uppercase tracking-[0.2em] font-mono">
+                              Selected Location
+                            </label>
+                            {draftLocation && (
+                              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
+                                <div className="w-1 h-1 bg-accent rounded-full animate-pulse" />
+                                <span className="text-[8px] font-bold text-accent uppercase tracking-wider">High precision</span>
                               </div>
-                            ) : selectedAddress ? (
-                              <div className="space-y-0.5">
-                                <p className="text-[11px] font-bold text-white leading-tight">
-                                  {selectedAddress}
-                                </p>
-                                <p className="text-[9px] text-accent font-bold flex items-center gap-1">
-                                  <CheckCircle size={9} /> Location locked
-                                </p>
-                              </div>
-                            ) : (
-                              <p className="text-sm text-white/30 font-medium italic">Drop a pin on map...</p>
                             )}
                           </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 min-h-[36px] flex items-center">
+                              {isLocating ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 size={14} className="animate-spin text-accent" />
+                                  <span className="text-sm text-white/50 font-medium italic">Locating...</span>
+                                </div>
+                              ) : selectedAddress ? (
+                                <div className="space-y-0.5">
+                                  <p className="text-[11px] font-bold text-white leading-tight">
+                                    {selectedAddress}
+                                  </p>
+                                  <p className="text-[9px] text-accent font-bold flex items-center gap-1">
+                                    <CheckCircle size={9} /> Location locked
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-white/30 font-medium italic">Drop a pin on map...</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     <div className="space-y-3">
-                      <button
-                        type="button"
-                        disabled={!draftLocation}
-                        onClick={() => setFormStep(2)}
-                        className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-black text-xs group ${
-                          !draftLocation 
-                            ? 'bg-transparent border border-white/10 text-white/30 hover:bg-white/5 cursor-not-allowed shadow-none' 
-                            : 'bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'
-                        }`}
-                      >
-                        Next: Issue Type
-                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                      </button>
+                      {(sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768)) && (
+                        <button
+                          type="button"
+                          disabled={!draftLocation}
+                          onClick={() => setFormStep(2)}
+                          className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-black text-xs group ${
+                            !draftLocation 
+                              ? 'bg-transparent border border-white/10 text-white/30 hover:bg-white/5 cursor-not-allowed shadow-none' 
+                              : 'bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'
+                          }`}
+                        >
+                          Next: Issue Type
+                          <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                        </button>
+                      )}
                       {!draftLocation && (
                         <p className="text-[10px] text-white/40 text-center animate-pulse font-bold tracking-wider uppercase">
                           Drop a pin on the map to continue

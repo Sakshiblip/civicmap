@@ -148,7 +148,7 @@ export default function MapComponent({
   }, []);
 
   const isMobile = windowWidth < 640;
-  const popupWidth = isMobile ? Math.floor(windowWidth * 0.85) : 320;
+  const popupWidth = isMobile ? Math.min(windowWidth * 0.85, 280) : 280;
 
   const types = ['All', 'Garbage Disposal', 'Pothole', 'Street Light', 'Flooding', 'Graffiti', 'Other'];
 
@@ -280,41 +280,47 @@ export default function MapComponent({
             icon={icons[issue.status]}
           >
             <Popup className="custom-popup" minWidth={popupWidth} maxWidth={popupWidth}>
-              <div className="p-1 text-white">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`px-2 py-0.5 rounded text-xs font-bold text-white uppercase tracking-wider
-                    ${issue.status === 'pending' ? 'bg-red-500' : 
-                      issue.status === 'in_progress' ? 'bg-amber-500' : 'bg-emerald-500'}`}>
-                    {issue.status.replace('_', ' ')}
-                  </span>
-                  <span className="text-xs text-white/60 font-mono">
-                    {format(new Date(issue.created_at), 'MMM d, yyyy')}
-                  </span>
-                </div>
-                
-                <h3 className="font-heading font-bold text-lg leading-tight">{issue.issue_type}</h3>
-                
-                <div className="text-[11px] font-mono font-bold text-white/50 mb-2 border-b border-white/10 pb-2 mt-1">
-                  Reported by:{' '}
-                  <span className="text-white/80">
-                    {isAdmin 
-                      ? issue.email 
-                      : (currentUserId === issue.user_id ? 'You' : 'Anonymous Citizen')}
-                  </span>
-                  {isAdmin && <div className="text-[9px] font-normal mt-0.5 opacity-70">ID: {issue.user_id}</div>}
-                </div>
-
-                <p className="font-body text-sm text-white/80 leading-relaxed max-h-32 overflow-y-auto mb-2">
-                  {issue.description}
-                </p>
+              <div className="flex flex-col text-white overflow-hidden -m-[14px] -mx-[16px]">
+                {/* Image at the top */}
                 {issue.image_urls && issue.image_urls.length > 0 && (
-                  <div className="mt-3 space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Photo</span>
-                    <div className="rounded-lg overflow-hidden border border-white/10 bg-white/5 max-w-[200px]">
-                      <img src={issue.image_urls[0]} alt="Issue" className="w-full h-auto" />
-                    </div>
+                  <div className="w-full h-[160px] overflow-hidden bg-white/5 border-b border-white/10">
+                    <img 
+                      src={issue.image_urls[0]} 
+                      alt="Issue" 
+                      className="w-full h-full object-cover" 
+                    />
                   </div>
                 )}
+                
+                <div className="p-4 space-y-3">
+                  <div className="space-y-1">
+                    <h3 className="font-heading font-black text-lg leading-tight tracking-tight uppercase">{issue.issue_type}</h3>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black text-white uppercase tracking-wider
+                        ${issue.status === 'pending' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 
+                          issue.status === 'in_progress' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`}>
+                        {issue.status.replace('_', ' ')}
+                      </span>
+                      <span className="text-[10px] text-white/40 font-bold font-mono uppercase tracking-widest">
+                        {format(new Date(issue.created_at), 'MMM d, yyyy')}
+                      </span>
+                    </div>
+                  </div>
+                
+                  <div className="text-[10px] font-mono font-bold text-white/30 border-t border-white/5 pt-3">
+                    Reported by:{' '}
+                    <span className="text-white/60">
+                      {isAdmin 
+                        ? issue.email 
+                        : (currentUserId === issue.user_id ? 'You' : 'Anonymous Citizen')}
+                    </span>
+                  </div>
+
+                  <p className="font-body text-xs text-white/70 leading-relaxed max-h-24 overflow-y-auto pr-1">
+                    {issue.description}
+                  </p>
+                </div>
               </div>
             </Popup>
           </Marker>
