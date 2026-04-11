@@ -328,7 +328,7 @@ export default function AdminDashboard() {
           </div>
 
           {activeTab === 'dashboard' ? (
-            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col justify-center items-center gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               
               {/* Profile Card */}
               <div className="glass-card p-8 space-y-6 relative overflow-hidden group max-w-2xl">
@@ -591,6 +591,22 @@ function IssueDetailModal({ issue, onClose }: { issue: Issue, onClose: () => voi
           <div className="flex flex-wrap items-center gap-6 text-sm font-mono tracking-wider text-white/40">
             <span className="flex items-center gap-2"><Briefcase className="w-4 h-4" /> Ward #{issue.ward_number}</span>
             <span className="flex items-center gap-2"><Clock className="w-4 h-4" /> Reported on {format(new Date(issue.created_at), 'dd MMM yyyy')}</span>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm font-mono tracking-wider text-white/40">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">LOCATION</span>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-accent" />
+              <span>{issue.lat.toFixed(5)}, {issue.lng.toFixed(5)}</span>
+              <a 
+                href={`https://www.openstreetmap.org/?mlat=${issue.lat}&mlon=${issue.lng}&zoom=17`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-accent hover:bg-accent hover:text-background transition-all text-xs font-bold uppercase tracking-widest"
+              >
+                View on Map
+              </a>
+            </div>
           </div>
         </div>
 
