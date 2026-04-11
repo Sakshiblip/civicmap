@@ -47,16 +47,8 @@ function MapEvents({
   const map = useMap();
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  useMapEvents({
-    click(e: L.LeafletMouseEvent) {
-      if (windowWidth >= 640) { // Desktop
-        map.closePopup();
-        if (onMapClick) {
-          onMapClick(e.latlng.lat, e.latlng.lng);
-        }
-      }
-    },
-    touchstart(e: any) {
+  useEffect(() => {
+    const handleTouchStart = (e: any) => {
       if (windowWidth < 640) { // Mobile
         const latlng = e.latlng;
         longPressTimer.current = setTimeout(() => {
@@ -67,12 +59,35 @@ function MapEvents({
           }
         }, 600);
       }
-    },
-    touchend() {
+    };
+
+    const handleTouchEnd = () => {
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    },
-    touchmove() {
+    };
+
+    const handleTouchMove = () => {
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    };
+
+    map.on('touchstart', handleTouchStart);
+    map.on('touchend', handleTouchEnd);
+    map.on('touchmove', handleTouchMove);
+
+    return () => {
+      map.off('touchstart', handleTouchStart);
+      map.off('touchend', handleTouchEnd);
+      map.off('touchmove', handleTouchMove);
+    };
+  }, [map, windowWidth, onMapClick, setRipple]);
+
+  useMapEvents({
+    click(e: L.LeafletMouseEvent) {
+      if (windowWidth >= 640) { // Desktop
+        map.closePopup();
+        if (onMapClick) {
+          onMapClick(e.latlng.lat, e.latlng.lng);
+        }
+      }
     }
   });
   return null;
