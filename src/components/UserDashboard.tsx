@@ -65,6 +65,7 @@ export default function UserDashboard() {
   const [submittedIssue, setSubmittedIssue] = useState<Issue | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string>('');
   const [isLocating, setIsLocating] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
   const baseLayerUrls = {
@@ -425,40 +426,22 @@ export default function UserDashboard() {
           left: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.x}px` : '0', 
           top: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.y}px` : 'auto', 
           cursor: isDragging ? 'grabbing' : 'auto',
-          transform: !sheetExpanded && typeof window !== 'undefined' && window.innerWidth < 768 ? 'translateY(calc(100% - 120px))' : 'translateY(0)',
+          transform: !sheetOpen && typeof window !== 'undefined' && window.innerWidth < 768 ? 'translateY(calc(100% - 72px))' : 'translateY(0)',
           transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), left 0.1s, top 0.1s'
         }}
-        className="fixed md:w-[320px] w-full bottom-0 md:bottom-auto z-[2000] glass flex flex-col shadow-2xl rounded-t-[32px] md:rounded-[32px] overflow-hidden select-none max-h-[75vh] md:max-h-[calc(100vh-48px)] animate-in slide-in-from-bottom-10 duration-500"
+        className="fixed md:w-[320px] w-full bottom-0 md:bottom-auto z-[2000] glass flex flex-col shadow-2xl rounded-t-[32px] md:rounded-[32px] overflow-hidden select-none max-h-[75vh] md:max-h-[calc(100vh-48px)] animate-in slide-in-from-bottom-10 duration-500 pb- bezpiecznie md:pb-0"
       >
-
-        {/* Header (Drag Handle) */}
+        {/* Minimal Centered Drag Handle */}
         <div 
-          onClick={() => { if (typeof window !== 'undefined' && window.innerWidth < 768) setSheetExpanded(!sheetExpanded); }}
-          onMouseDown={(e) => { handleMouseDown(e); if (typeof window !== 'undefined' && window.innerWidth < 768) setSheetExpanded(true); }}
-          onTouchStart={() => { if (typeof window !== 'undefined' && window.innerWidth < 768) setSheetExpanded(true); }}
-          className="px-5 pt-3 pb-4 md:py-4 border-b border-white/5 flex flex-col bg-surface/30 backdrop-blur-xl cursor-grab active:cursor-grabbing"
-        >
-          {/* Mobile Drag Handle */}
-          <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-4 md:hidden" />
-          
-          <div className="hidden md:block">
-            <h1 className="font-heading text-lg font-black text-white tracking-tight flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
-                <MapPin size={16} className="text-accent" />
-              </div>
-              NagarSeva
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="font-mono text-[9px] text-white/40 truncate uppercase tracking-widest px-0.5">Verified: {displayName}</p>
-            </div>
-          </div>
-        </div>
+          onClick={() => setSheetOpen(s => !s)}
+          className="w-10 h-1 bg-gray-400/50 rounded-full mx-auto my-3 cursor-pointer hover:bg-gray-400 transition-colors" 
+        />
 
-        {/* Tabs - Smaller */}
+        {/* Tabs - Smaller (Always Visible) */}
         <div className="flex items-center p-3 gap-4 border-b border-white/5">
           <button
-            onClick={() => { setActiveTab('submit'); setFormStep(1); setSheetExpanded(true); }}
-            className={`flex-1 h-10 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
+            onClick={() => { setActiveTab('submit'); setFormStep(1); setSheetOpen(true); }}
+            className={`flex-1 h-10 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/40 hover:bg-surface'
               }`}
           >
             <PlusCircle size={16} />
@@ -470,76 +453,89 @@ export default function UserDashboard() {
               }`}
           >
             <List size={16} />
-            <span className="md:inline">My Reports ({userIssues.length})</span>
+            <span className="md:inline">My Reports ({issues.filter(i => i.email === user?.email).length})</span>
           </button>
         </div>
 
-        {/* Instruction Banner - Compact */}
-        {(activeTab === 'submit' && (sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768))) && (
-          <div className="px-5 pt-3">
-            <p className="text-xs text-white/40 font-medium flex items-center gap-2">
-              <Navigation size={12} className="text-accent/50" />
-              Double-click map to drop a pin.
-            </p>
-          </div>
-        )}
-
-        {/* Inline Legend */}
-        {(activeTab === 'submit' && (sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768))) && (
-          <div className="px-5 py-2.5 flex items-center gap-4 bg-white/[0.02] border-y border-white/5">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Pending</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">In Progress</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Resolved</span>
-            </div>
-          </div>
-        )}
-
-        {/* Main Scrollable Area */}
-        <div className="flex-1 overflow-y-auto w-full flex flex-col gap-3 styled-scrollbar">
-
-          {/* Community Pulse Section Removed */}
-
-          {/* Stepper Component - Smaller */}
-          {(activeTab === 'submit' && (sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768))) && (
-            <div className="px-8 pt-4 pb-2">
-              {/* Stepper logic */}
-              <div className="relative flex justify-between gap-4">
-                {/* Stepper Progress Lines */}
-                <div className="stepper-line w-full" />
-                <div className="stepper-line-active" style={{ width: `${((formStep - 1) / 2) * 100}%` }} />
-                
-                {/* Steps */}
-                {[1, 2, 3].map((step) => (
-                  <div key={step} className="relative z-20 flex flex-col items-center flex-1">
-                    <div 
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-500 font-bold border-2 text-[10px] ${
-                        formStep === step 
-                          ? 'bg-accent border-accent text-white shadow-lg shadow-accent/30 scale-110' 
-                          : formStep > step 
-                            ? 'bg-accent border-accent text-background' 
-                            : 'bg-surface border-white/20 text-white/40'
-                      }`}
-                    >
-                      {formStep > step ? <CheckCircle size={14} strokeWidth={3} /> : step}
-                    </div>
-                    <span className={`text-xs mt-1.5 font-bold uppercase tracking-widest transition-colors duration-300 ${
-                      formStep === step ? 'text-white' : 'text-white/40'
-                    }`}>
-                      {step === 1 ? 'Map' : step === 2 ? 'Details' : 'Media'}
-                    </span>
+        {/* Conditional Content Wrapping everything else */}
+        {sheetOpen && (
+          <div className="flex-1 overflow-y-auto w-full flex flex-col gap-3 styled-scrollbar">
+            {/* Header Info */}
+            <div className="px-5 pt-1 pb-4 border-b border-white/5 flex flex-col bg-surface/30 backdrop-blur-xl">
+              <div className="hidden md:block">
+                <h1 className="font-heading text-lg font-black text-white tracking-tight flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
+                    <MapPin size={16} className="text-accent" />
                   </div>
-                ))}
+                  NagarSeva
+                </h1>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="font-mono text-[9px] text-white/40 truncate uppercase tracking-widest px-0.5">Verified: {displayName}</p>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Instruction Banner */}
+            {activeTab === 'submit' && !submittedIssue && (
+              <div className="px-5 pt-3">
+                <p className="text-xs text-white/40 font-medium flex items-center gap-2">
+                  <Navigation size={12} className="text-accent/50" />
+                  Double-click map to drop a pin.
+                </p>
+              </div>
+            )}
+
+            {/* Legend */}
+            {activeTab === 'submit' && !submittedIssue && (
+              <div className="px-5 py-2.5 flex items-center gap-4 bg-white/[0.02] border-y border-white/5">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Pending</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">In Progress</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Resolved</span>
+                </div>
+              </div>
+            )}
+
+            {/* Stepper Component - Smaller */}
+            {activeTab === 'submit' && !submittedIssue && (
+              <div className="px-8 pt-4 pb-2">
+                {/* Stepper logic */}
+                <div className="relative flex justify-between gap-4">
+                  {/* Stepper Progress Lines */}
+                  <div className="stepper-line w-full" />
+                  <div className="stepper-line-active" style={{ width: `${((formStep - 1) / 2) * 100}%` }} />
+                  
+                  {/* Steps */}
+                  {[1, 2, 3].map((step) => (
+                    <div key={step} className="relative z-20 flex flex-col items-center flex-1">
+                      <div 
+                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-500 font-bold border-2 text-[10px] ${
+                          formStep === step 
+                            ? 'bg-accent border-accent text-white shadow-lg shadow-accent/30 scale-110' 
+                            : formStep > step 
+                              ? 'bg-accent border-accent text-background' 
+                              : 'bg-surface border-white/20 text-white/40'
+                        }`}
+                      >
+                        {formStep > step ? <CheckCircle size={14} strokeWidth={3} /> : step}
+                      </div>
+                      <span className={`text-xs mt-1.5 font-bold uppercase tracking-widest transition-colors duration-300 ${
+                        formStep === step ? 'text-white' : 'text-white/40'
+                      }`}>
+                        {step === 1 ? 'Map' : step === 2 ? 'Details' : 'Media'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
           {/* SUBMIT TAB - Compact */}
           {activeTab === 'submit' && !submittedIssue && (
@@ -549,7 +545,6 @@ export default function UserDashboard() {
                 {formStep === 1 && (
                   <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
                     <div className="space-y-3">
-                      {(sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768)) && (
                         <div 
                           className={`premium-card p-3 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${
                             draftLocation ? 'scale-[1.01] border-accent/20 glow-accent' : 'opacity-80'
@@ -589,25 +584,23 @@ export default function UserDashboard() {
                             </div>
                           </div>
                         </div>
-                      )}
+                      
                     </div>
 
                     <div className="space-y-3">
-                      {(sheetExpanded || (typeof window !== 'undefined' && window.innerWidth >= 768)) && (
-                        <button
-                          type="button"
-                          disabled={!draftLocation}
-                          onClick={() => setFormStep(2)}
-                          className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-black text-xs group ${
-                            !draftLocation 
-                              ? 'bg-transparent border border-white/10 text-white/30 hover:bg-white/5 cursor-not-allowed shadow-none' 
-                              : 'bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'
-                          }`}
-                        >
-                          Next: Issue Type
-                          <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                        </button>
-                      )}
+                         <button
+                           type="button"
+                           disabled={!draftLocation}
+                           onClick={() => setFormStep(2)}
+                           className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-black text-xs group ${
+                             !draftLocation 
+                               ? 'bg-transparent border border-white/10 text-white/30 hover:bg-white/5 cursor-not-allowed shadow-none' 
+                               : 'bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'
+                           }`}
+                         >
+                           Next: Issue Type
+                           <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                         </button>
                       {!draftLocation && (
                         <p className="text-[10px] text-white/40 text-center animate-pulse font-bold tracking-wider uppercase">
                           Drop a pin on the map to continue
@@ -887,7 +880,7 @@ export default function UserDashboard() {
             </div>
           )}
         </div>
-        
+        )}
         {/* Loading Overlay */}
         {isLoading && (
           <div className="absolute inset-x-0 top-0 bottom-0 z-[100] bg-background/40 backdrop-blur-[2px] flex items-center justify-center">

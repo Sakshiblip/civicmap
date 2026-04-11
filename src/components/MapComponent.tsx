@@ -279,11 +279,10 @@ export default function MapComponent({
             position={[issue.lat, issue.lng]} 
             icon={icons[issue.status]}
           >
-            <Popup className="custom-popup" minWidth={popupWidth} maxWidth={popupWidth}>
-              <div className="flex flex-col text-white overflow-hidden -m-[14px] -mx-[16px]">
-                {/* Image at the top */}
+            <Popup className="custom-popup" minWidth={250} maxWidth={250}>
+              <div className="flex flex-col text-white p-1">
                 {issue.image_urls && issue.image_urls.length > 0 && (
-                  <div className="w-full h-[160px] overflow-hidden bg-white/5 border-b border-white/10">
+                  <div className="w-full h-[150px] overflow-hidden rounded-md bg-white/5 mb-3">
                     <img 
                       src={issue.image_urls[0]} 
                       alt="Issue" 
@@ -292,34 +291,16 @@ export default function MapComponent({
                   </div>
                 )}
                 
-                <div className="p-4 space-y-3">
-                  <div className="space-y-1">
-                    <h3 className="font-heading font-black text-lg leading-tight tracking-tight uppercase">{issue.issue_type}</h3>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black text-white uppercase tracking-wider
-                        ${issue.status === 'pending' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 
-                          issue.status === 'in_progress' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`}>
-                        {issue.status.replace('_', ' ')}
-                      </span>
-                      <span className="text-[10px] text-white/40 font-bold font-mono uppercase tracking-widest">
-                        {format(new Date(issue.created_at), 'MMM d, yyyy')}
-                      </span>
-                    </div>
+                <div className="px-1 space-y-1">
+                  <h3 className="font-bold text-base leading-tight">
+                    {issue.issue_type}
+                  </h3>
+                  
+                  <div className="flex items-center gap-2 text-[10px] text-white/50 font-bold uppercase tracking-wider">
+                    <span>{issue.status.replace('_', ' ')}</span>
+                    <span>•</span>
+                    <span>{format(new Date(issue.created_at), 'MMM d, yyyy')}</span>
                   </div>
-                
-                  <div className="text-[10px] font-mono font-bold text-white/30 border-t border-white/5 pt-3">
-                    Reported by:{' '}
-                    <span className="text-white/60">
-                      {isAdmin 
-                        ? issue.email 
-                        : (currentUserId === issue.user_id ? 'You' : 'Anonymous Citizen')}
-                    </span>
-                  </div>
-
-                  <p className="font-body text-xs text-white/70 leading-relaxed max-h-24 overflow-y-auto pr-1">
-                    {issue.description}
-                  </p>
                 </div>
               </div>
             </Popup>
