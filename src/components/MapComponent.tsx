@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -34,20 +34,61 @@ const icons = {
   resolved: createIcon('#10b981')     // tailwind green-500
 };
 
-// Component to handle map clicks (Double-click to report)
-function MapEvents({ onMapClick }: { onMapClick?: (lat: number, lng: number) => void }) {
+// Component to handle map clicks (Double-click or Long-press to report)
+function MapEvents({ 
+  onMapClick, 
+  windowWidth, 
+  setRipple 
+}: { 
+  onMapClick?: (lat: number, lng: number) => void, 
+  windowWidth: number,
+  setRipple: (pos: [number, number] | null) => void
+}) {
   const map = useMap();
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   
   useMapEvents({
-    dblclick(e: L.LeafletMouseEvent) {
-      if (e.originalEvent) {
-          e.originalEvent.preventDefault();
-          e.originalEvent.stopPropagation();
+    mousedown(e: L.LeafletMouseEvent) {
+      if (windowWidth < 640) { // Mobile
+        longPressTimer.current = setTimeout(() => {
+          if (onMapClick) {
+            onMapClick(e.latlng.lat, e.latlng.lng);
+            setRipple([e.latlng.lat, e.latlng.lng]);
+            setTimeout(() => setRipple(null), 800);
+          }
+        }, 600);
       }
-      
-      map.closePopup();
+    },
+    mouseup() {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    },
+    mousemove() {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    },
+    touchstart(e: any) {
       if (onMapClick) {
-        onMapClick(e.latlng.lat, e.latlng.lng);
+        longPressTimer.current = setTimeout(() => {
+          const latlng = map.mouseEventToLatLng(e.originalEvent.touches[0]);
+          onMapClick(latlng.lat, latlng.lng);
+          setRipple([latlng.lat, latlng.lng]);
+          setTimeout(() => setRipple(null), 800);
+        }, 600);
+      }
+    },
+    touchend() {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    },
+    dblclick(e: L.LeafletMouseEvent) {
+      if (windowWidth >= 640) { // Desktop
+        if (e.originalEvent) {
+            e.originalEvent.preventDefault();
+            e.originalEvent.stopPropagation();
+        }
+        
+        map.closePopup();
+        if (onMapClick) {
+          onMapClick(e.latlng.lat, e.latlng.lng);
+        }
       }
     },
     click() {
@@ -111,6 +152,7 @@ export default function MapComponent({
   const [statusFilter, setStatusFilter] = useState<'all' | IssueStatus>('all');
   const [typeFilter, setTypeFilter] = useState('All');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [ripple, setRipple] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -203,8 +245,24 @@ export default function MapComponent({
           </div>
         )}
         
+        {/* Ripple Effect for Mobile Longpress */}
+        {ripple && (
+          <Marker 
+            position={ripple} 
+            icon={new L.DivIcon({
+              className: 'ripple-effect',
+              iconSize: [2, 2],
+              iconAnchor: [1, 1]
+            })} 
+          />
+        )}
+
         {/* Render MapEvents unconditionally to handle popup closing on tap */}
-        <MapEvents onMapClick={interactive ? onMapClick : undefined} />
+        <MapEvents 
+          onMapClick={interactive ? onMapClick : undefined} 
+          windowWidth={windowWidth}
+          setRipple={setRipple}
+        />
         {selectedLocation && (
           <FlyToLocation 
             center={selectedLocation} 

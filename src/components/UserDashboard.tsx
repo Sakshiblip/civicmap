@@ -63,6 +63,9 @@ export default function UserDashboard() {
     heatmap: 0.8
   });
   const [submittedIssue, setSubmittedIssue] = useState<Issue | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<string>('');
+  const [isLocating, setIsLocating] = useState(false);
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
   const baseLayerUrls = {
     osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -178,9 +181,30 @@ export default function UserDashboard() {
     });
   };
 
+  const fetchAddress = async (lat: number, lng: number) => {
+    setIsLocating(true);
+    setSelectedAddress('');
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
+        headers: {
+          'User-Agent': 'NagarSeva-Citizen-App/1.0 (contact: support@nagarseva.example.com)'
+        }
+      });
+      const data = await response.json();
+      if (data && data.display_name) {
+        setSelectedAddress(data.display_name);
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
   const handleMapClick = (lat: number, lng: number) => {
     if (activeTab === 'submit') {
       setDraftLocation([lat, lng]);
+      fetchAddress(lat, lng);
     }
   };
 
@@ -400,14 +424,17 @@ export default function UserDashboard() {
         style={{ 
           left: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.x}px` : '0', 
           top: typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarPos.y}px` : 'auto', 
-          cursor: isDragging ? 'grabbing' : 'auto' 
+          cursor: isDragging ? 'grabbing' : 'auto',
+          transform: !isSheetExpanded && typeof window !== 'undefined' && window.innerWidth < 768 ? 'translateY(calc(100% - 120px))' : 'translateY(0)',
+          transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), left 0.1s, top 0.1s'
         }}
         className="fixed md:w-[320px] w-full bottom-0 md:bottom-auto z-[2000] glass flex flex-col shadow-2xl rounded-t-[32px] md:rounded-[32px] overflow-hidden select-none max-h-[75vh] md:max-h-[calc(100vh-48px)] animate-in slide-in-from-bottom-10 duration-500"
       >
 
         {/* Header (Drag Handle) */}
         <div 
-          onMouseDown={handleMouseDown}
+          onMouseDown={(e) => { handleMouseDown(e); setIsSheetExpanded(true); }}
+          onTouchStart={() => setIsSheetExpanded(true)}
           className="px-5 pt-3 pb-4 md:py-4 border-b border-white/5 flex flex-col bg-surface/30 backdrop-blur-xl cursor-grab active:cursor-grabbing"
         >
           {/* Mobile Drag Handle */}
@@ -429,7 +456,7 @@ export default function UserDashboard() {
         {/* Tabs - Smaller */}
         <div className="flex items-center p-3 gap-4 border-b border-white/5">
           <button
-            onClick={() => { setActiveTab('submit'); setFormStep(1); }}
+            onClick={() => { setActiveTab('submit'); setFormStep(1); setIsSheetExpanded(true); }}
             className={`flex-1 h-10 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${activeTab === 'submit' ? 'bg-accent text-background shadow-lg shadow-accent/20' : 'bg-surface/50 text-white/60 hover:bg-surface'
               }`}
           >
@@ -539,10 +566,15 @@ export default function UserDashboard() {
 
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-h-[36px] flex items-center">
-                            {draftLocation ? (
+                            {isLocating ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 size={14} className="animate-spin text-accent" />
+                                <span className="text-sm text-white/50 font-medium italic">Locating...</span>
+                              </div>
+                            ) : selectedAddress ? (
                               <div className="space-y-0.5">
-                                <p className="text-sm font-mono font-bold text-white tracking-tighter">
-                                  {draftLocation[0].toFixed(5)}, {draftLocation[1].toFixed(5)}
+                                <p className="text-[11px] font-bold text-white leading-tight">
+                                  {selectedAddress}
                                 </p>
                                 <p className="text-[9px] text-accent font-bold flex items-center gap-1">
                                   <CheckCircle size={9} /> Location locked
