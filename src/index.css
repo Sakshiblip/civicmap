@@ -174,19 +174,4 @@
 .toast-success {
   @apply bg-emerald-500/90 border-emerald-400/20 text-white shadow-emerald-500/20;
 }
-/* Ripple Animation */
-.ripple-effect {
-  position: absolute;
-  width: 2px;
-  height: 2px;
-  background: #00d4aa;
-  border-radius: 50%;
-  animation: ripple-out 0.8s ease-out forwards;
-  pointer-events: none;
-  z-index: 9999;
-}
 
-@keyframes ripple-out {
-  0% { transform: scale(0); opacity: 0.8; }
-  100% { transform: scale(50); opacity: 0; }
-}

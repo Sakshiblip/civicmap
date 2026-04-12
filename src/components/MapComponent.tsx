@@ -36,63 +36,25 @@ const icons = {
 
 // Component to handle map clicks (Double-click or Long-press to report)
 function MapEvents({ 
-  onMapClick, 
-  windowWidth, 
-  setRipple 
+  onMapClick 
 }: { 
-  onMapClick?: (lat: number, lng: number) => void, 
-  windowWidth: number,
-  setRipple: (pos: [number, number] | null) => void
+  onMapClick?: (lat: number, lng: number) => void
 }) {
   const map = useMap();
   useEffect(() => {
     if (!map || !onMapClick) return;
 
-    let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-    let touchLatLng: L.LatLng | null = null;
-
-    const handleClick = (e: L.LeafletMouseEvent) => {
-      if (windowWidth >= 640) { // Desktop
-        map.closePopup();
-        onMapClick(e.latlng.lat, e.latlng.lng);
-      }
+    const handleDblClick = (e: L.LeafletMouseEvent) => {
+      map.closePopup();
+      onMapClick(e.latlng.lat, e.latlng.lng);
     };
 
-    map.on('click', handleClick);
-
-    map.on('touchstart', (e: L.LeafletEvent) => {
-      const touch = e as L.LeafletMouseEvent;
-      touchLatLng = touch.latlng;
-      longPressTimer = setTimeout(() => {
-        if (touchLatLng) {
-          onMapClick(touchLatLng.lat, touchLatLng.lng);
-          setRipple([touchLatLng.lat, touchLatLng.lng]);
-          setTimeout(() => setRipple(null), 800);
-        }
-      }, 600);
-    });
-
-    map.on('touchend', () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    });
-
-    map.on('touchmove', () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    });
+    map.on('dblclick', handleDblClick);
 
     return () => {
-      map.off('click', handleClick);
-      map.off('touchstart');
-      map.off('touchend');
-      map.off('touchmove');
+      map.off('dblclick', handleDblClick);
     };
-  }, [map, windowWidth, onMapClick, setRipple]);
+  }, [map, onMapClick]);
   return null;
 }
 
@@ -147,7 +109,6 @@ export default function MapComponent({
   const [statusFilter, setStatusFilter] = useState<'all' | IssueStatus>('all');
   const [typeFilter, setTypeFilter] = useState('All');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-  const [ripple, setRipple] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -240,23 +201,11 @@ export default function MapComponent({
           </div>
         )}
         
-        {/* Ripple Effect for Mobile Longpress */}
-        {ripple && (
-          <Marker 
-            position={ripple} 
-            icon={new L.DivIcon({
-              className: 'ripple-effect',
-              iconSize: [2, 2],
-              iconAnchor: [1, 1]
-            })} 
-          />
-        )}
+
 
         {/* Render MapEvents unconditionally to handle popup closing on tap */}
         <MapEvents 
           onMapClick={interactive ? onMapClick : undefined} 
-          windowWidth={windowWidth}
-          setRipple={setRipple}
         />
         {selectedLocation && (
           <FlyToLocation 
