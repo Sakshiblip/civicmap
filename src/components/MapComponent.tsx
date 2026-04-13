@@ -44,15 +44,41 @@ function MapEvents({
   useEffect(() => {
     if (!map || !onMapClick) return;
 
-    const handleDblClick = (e: L.LeafletMouseEvent) => {
+    let lastTapTime = 0;
+    let lastActionTime = 0;
+
+    const handleAction = (e: L.LeafletMouseEvent) => {
+      const now = Date.now();
+      // Prevent duplicate triggers (e.g., both manual tap and dblclick firing)
+      if (now - lastActionTime < 500) return;
+      lastActionTime = now;
+
       map.closePopup();
       onMapClick(e.latlng.lat, e.latlng.lng);
     };
 
+    const handleDblClick = (e: L.LeafletMouseEvent) => {
+      handleAction(e);
+    };
+
+    const handleClick = (e: L.LeafletMouseEvent) => {
+      const now = Date.now();
+      const delay = now - lastTapTime;
+      
+      if (delay < 300 && delay > 0) {
+        handleAction(e);
+        lastTapTime = 0; // Reset tap timer after detection
+      } else {
+        lastTapTime = now;
+      }
+    };
+
     map.on('dblclick', handleDblClick);
+    map.on('click', handleClick);
 
     return () => {
       map.off('dblclick', handleDblClick);
+      map.off('click', handleClick);
     };
   }, [map, onMapClick]);
   return null;
