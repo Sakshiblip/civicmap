@@ -413,7 +413,7 @@ export default function UserDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('list')}
-            className={`flex items-center gap-1.5 text-xs font-bold transition-all ${activeTab === 'list' ? 'text-accent' : 'text-white/40 hover:text-white'
+            className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-bold transition-all ${activeTab === 'list' ? 'text-accent' : 'text-white/40 hover:text-white'
               }`}
           >
             <List size={16} />
