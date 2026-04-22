@@ -272,7 +272,7 @@ export default function UserDashboard() {
 
     setUploadProgress(null);
 
-    const { data, error, status, statusText, count } = await supabase.from('issues').insert({
+    const { data, error } = await supabase.from('issues').insert({
       user_id: user.id,
       email: user.email,
       lat: draftLocation[0],
