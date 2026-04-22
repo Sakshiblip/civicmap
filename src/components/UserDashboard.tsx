@@ -272,7 +272,7 @@ export default function UserDashboard() {
 
     setUploadProgress(null);
 
-    const { data, error } = await supabase.from('issues').insert({
+    const { data, error, status, statusText, count } = await supabase.from('issues').insert({
       user_id: user.id,
       email: user.email,
       lat: draftLocation[0],
@@ -282,6 +282,9 @@ export default function UserDashboard() {
       image_urls: uploadedUrls,
       status: 'pending'
     }).select().single();
+    if(!error){
+      await sendEmailNotification(data)
+    }
 
     if (error) {
       alert(error.message);
@@ -305,6 +308,23 @@ export default function UserDashboard() {
   };
 
   const userIssues = issues.filter(i => i.email === user?.email);
+
+  
+async function sendEmailNotification(data: any){
+  await fetch("https://qluqaqlwtbjsdhikcfwv.supabase.co/functions/v1/send-issue-email", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    issue: {
+      title: "New Issue Created",
+      description: "New Issue Created with Issue type " + data.issue_type,
+    },
+  }),
+});
+}
+
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
