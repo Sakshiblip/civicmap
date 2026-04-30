@@ -475,7 +475,7 @@ async function sendEmailNotification(data: any){
           transform: !sheetOpen && typeof window !== 'undefined' && window.innerWidth < 768 ? 'translateY(calc(100% - 72px))' : 'translateY(0)',
           transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), left 0.1s, top 0.1s'
         }}
-        className="fixed md:w-[320px] w-full bottom-0 md:bottom-auto z-[2000] glass flex flex-col shadow-2xl rounded-t-[32px] md:rounded-[32px] overflow-hidden select-none max-h-[75vh] md:max-h-[calc(100vh-48px)] animate-in slide-in-from-bottom-10 duration-500 pb- bezpiecznie md:pb-0"
+        className="fixed md:w-[320px] w-full bottom-0 md:bottom-auto z-[2000] glass flex flex-col shadow-2xl rounded-t-[32px] md:rounded-[32px] overflow-hidden select-none max-h-[75vh] md:max-h-[calc(100vh-80px)] animate-in slide-in-from-bottom-10 duration-500 pb-0"
       >
         {/* Minimal Centered Drag Handle */}
         <div 
@@ -505,7 +505,7 @@ async function sendEmailNotification(data: any){
 
         {/* Conditional Content Wrapping everything else */}
         {sheetOpen && (
-          <div className="flex-1 overflow-y-auto w-full flex flex-col gap-3 styled-scrollbar">
+          <div className="flex-1 overflow-y-auto w-full flex flex-col styled-scrollbar">
             {/* Header Info */}
             <div className="px-5 pt-1 pb-4 border-b border-white/5 flex flex-col bg-surface/30 backdrop-blur-xl">
               <div className="hidden md:block">
@@ -585,18 +585,18 @@ async function sendEmailNotification(data: any){
 
           {/* SUBMIT TAB - Compact */}
           {activeTab === 'submit' && !submittedIssue && (
-            <div className="p-5 space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
-              <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="px-5 py-3 animate-in fade-in slide-in-from-right-4 duration-300">
+              <form onSubmit={handleSubmit} className="space-y-2">
                 {/* STEP 1: LOCATION */}
                 {formStep === 1 && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
-                    <div className="space-y-3">
+                  <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-2">
                         <div 
-                          className={`premium-card p-3 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${
+                          className={`premium-card p-2.5 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${
                             draftLocation ? 'scale-[1.01] border-accent/20 glow-accent' : 'opacity-80'
                           }`}
                         >
-                          <div className="flex justify-between items-start mb-3">
+                          <div className="flex justify-between items-start mb-2">
                             <label className="text-[9px] font-black text-accent uppercase tracking-[0.2em] font-mono">
                               Selected Location
                             </label>
@@ -609,6 +609,7 @@ async function sendEmailNotification(data: any){
                               )}
                               {draftLocation && (
                                 <button 
+                                  type="button"
                                   onClick={(e) => { e.stopPropagation(); handleCancelDraft(); }}
                                   className="w-5 h-5 flex items-center justify-center bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-500 rounded-full transition-all"
                                   title="Remove location"
@@ -620,7 +621,7 @@ async function sendEmailNotification(data: any){
                           </div>
 
                           <div className="flex items-center gap-3">
-                            <div className="flex-1 min-h-[36px] flex items-center">
+                            <div className="flex-1 min-h-[32px] flex items-center">
                               {showRemovedInline ? (
                                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
                                   <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
@@ -629,32 +630,31 @@ async function sendEmailNotification(data: any){
                               ) : isLocating ? (
                                 <div className="flex items-center gap-2">
                                   <Loader2 size={14} className="animate-spin text-accent" />
-                                  <span className="text-sm text-white/50 font-medium italic">Locating...</span>
+                                  <span className="text-sm text-white/50 font-medium italic text-[11px]">Locating...</span>
                                 </div>
                               ) : selectedAddress ? (
                                 <div className="space-y-0.5">
-                                  <p className="text-[11px] font-bold text-white leading-tight">
+                                  <p className="text-[10px] font-bold text-white leading-tight">
                                     {selectedAddress}
                                   </p>
-                                  <p className="text-[9px] text-accent font-bold flex items-center gap-1">
-                                    <CheckCircle size={9} /> Location locked
+                                  <p className="text-[8px] text-accent font-bold flex items-center gap-1">
+                                    <CheckCircle size={8} /> Location locked
                                   </p>
                                 </div>
                               ) : (
-                                <p className="text-sm text-white/30 font-medium italic">Drop a pin on map...</p>
+                                <p className="text-[11px] text-white/30 font-medium italic">Drop a pin on map...</p>
                               )}
                             </div>
                           </div>
                         </div>
-                      
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="sticky bottom-0 bg-surface/90 backdrop-blur-md -mx-5 px-5 py-3 border-t border-white/5 z-30 mt-4">
                          <button
                            type="button"
                            disabled={!draftLocation}
                            onClick={() => setFormStep(2)}
-                           className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-black text-xs group ${
+                           className={`w-full py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all font-black text-[11px] group ${
                              !draftLocation 
                                ? 'bg-transparent border border-white/10 text-white/30 hover:bg-white/5 cursor-not-allowed shadow-none' 
                                : 'bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'
@@ -664,7 +664,7 @@ async function sendEmailNotification(data: any){
                            <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
                          </button>
                       {!draftLocation && (
-                        <p className="text-[10px] text-white/40 text-center animate-pulse font-bold tracking-wider uppercase">
+                        <p className="text-[9px] text-white/40 text-center animate-pulse font-bold tracking-wider uppercase mt-2">
                           Drop a pin on the map to continue
                         </p>
                       )}
@@ -674,18 +674,18 @@ async function sendEmailNotification(data: any){
 
                 {/* STEP 2: DETAILS */}
                 {formStep === 2 && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
-                    <div className="space-y-3">
+                  <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-2">
                       {/* Issue Type */}
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Select Category</label>
-                        <div className="grid grid-cols-2 gap-1.5">
+                        <div className="grid grid-cols-3 gap-1">
                           {['Pothole', 'Garbage', 'Street Light', 'Flooding', 'Graffiti', 'Other'].map((type) => (
                             <button
                               key={type}
                               type="button"
                               onClick={() => setIssueType(type)}
-                              className={`p-2 rounded-xl border text-[11px] font-bold transition-all ${
+                              className={`p-1.5 rounded-lg border text-[10px] font-bold transition-all ${
                                 issueType === type 
                                   ? 'bg-accent text-background border-accent shadow-lg shadow-accent/10' 
                                   : 'bg-surface/50 border-white/5 text-white/60 hover:border-white/20'
@@ -698,23 +698,24 @@ async function sendEmailNotification(data: any){
                       </div>
 
                       {/* Description */}
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Describe Situation</label>
                         <textarea
                           value={description}
                           onChange={(e) => setDescription(e.target.value)}
                           required
+                          rows={3}
                           placeholder="What needs attention?"
-                          className="w-full bg-surface/50 border border-white/10 rounded-2xl p-3 text-[12px] text-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none font-body min-h-[100px] transition-all"
+                          className="w-full bg-surface/50 border border-white/10 rounded-xl p-2.5 text-[11px] text-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none font-body min-h-[80px] transition-all resize-none"
                         />
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="sticky bottom-0 bg-surface/90 backdrop-blur-md -mx-5 px-5 py-3 border-t border-white/5 z-30 mt-4 flex gap-2">
                       <button
                         type="button"
                         onClick={() => setFormStep(1)}
-                        className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all border border-white/10 text-[11px]"
+                        className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 text-[10px]"
                       >
                         Back
                       </button>
@@ -722,7 +723,7 @@ async function sendEmailNotification(data: any){
                         type="button"
                         disabled={!description || description.length < 5}
                         onClick={() => setFormStep(3)}
-                        className="flex-1 bg-gradient-to-r from-accent to-emerald-400 text-background font-black py-3 rounded-2xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 shadow-xl shadow-accent/20 group text-xs"
+                        className="flex-1 bg-gradient-to-r from-accent to-emerald-400 text-background font-black py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 shadow-xl shadow-accent/20 group text-[11px]"
                       >
                         Add Photos
                         <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
@@ -733,14 +734,14 @@ async function sendEmailNotification(data: any){
 
                 {/* STEP 3: PHOTOS & SUBMIT */}
                 {formStep === 3 && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
-                    <div className="space-y-3">
+                  <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-2">
                       <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Evidence (Optional)</label>
                       
                       {imageUrls.length > 0 ? (
                         <div className="grid grid-cols-2 gap-2">
                           {imageUrls.map((url, i) => (
-                            <div key={i} className="aspect-square rounded-xl overflow-hidden border border-white/10 relative group">
+                            <div key={i} className="aspect-square rounded-lg overflow-hidden border border-white/10 relative group">
                               <img src={url} alt="Preview" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                               <button
                                 type="button"
@@ -753,66 +754,66 @@ async function sendEmailNotification(data: any){
                                   newUrls.splice(i, 1);
                                   setImageUrls(newUrls);
                                 }}
-                                className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white shadow-xl transform scale-0 group-hover:scale-100 transition-transform"
+                                className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white shadow-xl transform scale-0 group-hover:scale-100 transition-transform"
                               >
-                                <LogOut size={12} className="rotate-45" />
+                                <X size={10} />
                               </button>
                             </div>
                           ))}
                           <div 
                             onClick={handleImageDemo}
-                            className="aspect-square rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
+                            className="aspect-square rounded-lg border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
                           >
-                            <PlusCircle size={18} className="text-white/20 group-hover:text-accent" />
-                            <span className="text-[9px] font-bold text-white/30 group-hover:text-accent uppercase tracking-widest text-center px-1">Add More</span>
+                            <PlusCircle size={16} className="text-white/20 group-hover:text-accent" />
+                            <span className="text-[8px] font-bold text-white/30 group-hover:text-accent uppercase tracking-widest text-center px-1">Add More</span>
                           </div>
                         </div>
                       ) : (
                         <div
                           onClick={handleImageDemo}
-                          className="premium-card p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-all group border-dashed"
+                          className="premium-card p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-all group border-dashed"
                         >
-                          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:bg-accent/10">
-                            <ImageIcon size={24} className="text-white/20 group-hover:text-accent" />
+                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:bg-accent/10">
+                            <ImageIcon size={20} className="text-white/20 group-hover:text-accent" />
                           </div>
                           <div className="text-center">
-                            <p className="text-[12px] font-bold text-white group-hover:text-accent transition-colors">Select Photos</p>
-                            <p className="text-[9px] text-white/30 uppercase tracking-widest mt-0.5">PNG, JPG up to 10MB</p>
+                            <p className="text-[11px] font-bold text-white group-hover:text-accent transition-colors">Select Photos</p>
+                            <p className="text-[8px] text-white/30 uppercase tracking-widest mt-0.5">PNG, JPG up to 10MB</p>
                           </div>
                         </div>
                       )}
                     </div>
 
                     {/* Summary Card - even smaller */}
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
+                    <div className="p-2 rounded-lg bg-white/5 border border-white/10 space-y-1">
                        <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Summary</p>
-                       <div className="flex justify-between items-center text-[11px]">
+                       <div className="flex justify-between items-center text-[10px]">
                           <span className="text-white/60">Type:</span>
                           <span className="font-bold text-accent">{issueType}</span>
                        </div>
                     </div>
 
-                    <div className="flex gap-2 pt-1">
+                    <div className="sticky bottom-0 bg-surface/90 backdrop-blur-md -mx-5 px-5 py-3 border-t border-white/5 z-30 mt-4 flex gap-2">
                       <button
                         type="button"
                         onClick={() => setFormStep(2)}
-                        className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all border border-white/10 text-[11px]"
+                        className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 text-[10px]"
                       >
                         Back
                       </button>
                       <button
                         type="submit"
                         disabled={isSubmitting || dailyIssueCount >= 3}
-                        className="flex-1 bg-accent text-background font-black py-3 rounded-2xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-accent/20 text-xs"
+                        className="flex-1 bg-accent text-background font-black py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-accent/20 text-[11px]"
                       >
                         {isSubmitting ? (
                           <>
-                            <Loader2 size={16} className="animate-spin" />
+                            <Loader2 size={14} className="animate-spin" />
                             Wait...
                           </>
                         ) : (
                           <>
-                            <Send size={16} />
+                            <Send size={14} />
                             Complete
                           </>
                         )}
