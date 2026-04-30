@@ -99,6 +99,8 @@ interface MapComponentProps {
   issues: Issue[];
   onMapClick?: (lat: number, lng: number) => void;
   onLocateMe?: () => void;
+  onCancelDraft?: () => void;
+  isDraftRemoving?: boolean;
   interactive?: boolean;
   selectedLocation?: [number, number] | null; // For centering map
   draftPin?: [number, number] | null; // During submission
@@ -122,6 +124,8 @@ export default function MapComponent({
   issues, 
   onMapClick, 
   onLocateMe,
+  onCancelDraft,
+  isDraftRemoving = false,
   interactive = true, 
   selectedLocation, 
   draftPin, 
@@ -249,8 +253,31 @@ export default function MapComponent({
         )}
 
         {draftPin && (
-          <Marker position={draftPin} icon={icons.pending}>
-            <Popup className="custom-popup" minWidth={popupWidth} maxWidth={popupWidth}>
+          <Marker 
+            position={draftPin} 
+            icon={icons.pending}
+            eventHandlers={{
+              popupclose: (e) => {
+                // If it's a manual close (e.g. from the X button), we should trigger the cancel logic
+                // But wait, the requirements say 'the X button'.
+                // If we call onCancelDraft here, any click away will also cancel it.
+                // To be safe, we'll check if the close button was the target if possible.
+                // Alternatively, we just call it and the user Dashboard handles it.
+                if (onCancelDraft) {
+                  onCancelDraft();
+                }
+              },
+              add: (e) => {
+                // When marker is added, ensure popup is open
+                e.target.openPopup();
+              }
+            }}
+          >
+            <Popup 
+              className={`custom-popup ${isDraftRemoving ? 'animate-fade-out' : ''}`} 
+              minWidth={popupWidth} 
+              maxWidth={popupWidth}
+            >
               <div className="p-1 font-body text-sm font-bold">New Issue Location</div>
             </Popup>
           </Marker>

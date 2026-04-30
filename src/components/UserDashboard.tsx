@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import SearchBar from './SearchBar';
 import AnalyticsPanel from './AnalyticsPanel';
 import LayerControlPanel from './LayerControlPanel';
-import { Clock, Send, LogOut, ArrowRight, Loader2, ImageIcon, Share2, List, CheckCircle, MapPin, PlusCircle, Navigation } from 'lucide-react';
+import { Clock, Send, LogOut, ArrowRight, Loader2, ImageIcon, Share2, List, CheckCircle, MapPin, PlusCircle, Navigation, X } from 'lucide-react';
 import ProfileSidebar from './ProfileSidebar';
 
 export default function UserDashboard() {
@@ -63,6 +63,14 @@ export default function UserDashboard() {
   const [selectedAddress, setSelectedAddress] = useState<string>('');
   const [isLocating, setIsLocating] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Removal & Undo State
+  const [lastDeletedLocation, setLastDeletedLocation] = useState<[number, number] | null>(null);
+  const [lastDeletedAddress, setLastDeletedAddress] = useState<string>('');
+  const [isDraftRemoving, setIsDraftRemoving] = useState(false);
+  const [showRemovedInline, setShowRemovedInline] = useState(false);
+  const [undoToast, setUndoToast] = useState<{ visible: boolean } | null>(null);
+  const undoTimerRef = useRef<any>(null);
 
   const baseLayerUrls = {
     osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -202,6 +210,40 @@ export default function UserDashboard() {
     if (activeTab === 'submit') {
       setDraftLocation([lat, lng]);
       fetchAddress(lat, lng);
+    }
+  };
+
+  const handleCancelDraft = () => {
+    if (!draftLocation) return;
+    
+    setIsDraftRemoving(true);
+    // Visual feedback for marker removal
+    setTimeout(() => {
+      setLastDeletedLocation(draftLocation);
+      setLastDeletedAddress(selectedAddress);
+      setDraftLocation(null);
+      setSelectedAddress('');
+      setIsDraftRemoving(false);
+      setShowRemovedInline(true);
+      
+      // Inline message duration
+      setTimeout(() => setShowRemovedInline(false), 2000);
+      
+      // Undo snackbar logic
+      setUndoToast({ visible: true });
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = setTimeout(() => {
+        setUndoToast(null);
+      }, 5000);
+    }, 300);
+  };
+
+  const handleUndoCancel = () => {
+    if (lastDeletedLocation) {
+      setDraftLocation(lastDeletedLocation);
+      setSelectedAddress(lastDeletedAddress);
+      setUndoToast(null);
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     }
   };
 
@@ -354,6 +396,8 @@ async function sendEmailNotification(data: any){
           onMapClick={handleMapClick}
           onLocateMe={handleGeolocation}
           draftPin={draftLocation}
+          onCancelDraft={handleCancelDraft}
+          isDraftRemoving={isDraftRemoving}
           selectedLocation={flyTo}
           userLocation={userLocation}
           baseLayerUrl={baseLayerUrls['osm']}
@@ -400,6 +444,24 @@ async function sendEmailNotification(data: any){
               <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
             )}
             <p className="text-sm font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Undo Snackbar */}
+      {undoToast?.visible && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[3000] animate-in fade-in slide-in-from-bottom-6 duration-500">
+          <div className="bg-gray-900/95 backdrop-blur-xl border border-white/10 px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-6 text-white min-w-[320px] justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
+              <p className="text-sm font-bold tracking-wide">Issue location removed.</p>
+            </div>
+            <button 
+              onClick={handleUndoCancel}
+              className="text-xs font-black uppercase tracking-[0.2em] text-accent hover:text-white transition-colors py-2 px-4 bg-accent/10 hover:bg-accent/20 rounded-lg border border-accent/20"
+            >
+              Tap to undo
+            </button>
           </div>
         </div>
       )}
@@ -538,17 +600,33 @@ async function sendEmailNotification(data: any){
                             <label className="text-[9px] font-black text-accent uppercase tracking-[0.2em] font-mono">
                               Selected Location
                             </label>
-                            {draftLocation && (
-                              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
-                                <div className="w-1 h-1 bg-accent rounded-full animate-pulse" />
-                                <span className="text-[8px] font-bold text-accent uppercase tracking-wider">High precision</span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {draftLocation && (
+                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
+                                  <div className="w-1 h-1 bg-accent rounded-full animate-pulse" />
+                                  <span className="text-[8px] font-bold text-accent uppercase tracking-wider">High precision</span>
+                                </div>
+                              )}
+                              {draftLocation && (
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleCancelDraft(); }}
+                                  className="w-5 h-5 flex items-center justify-center bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-500 rounded-full transition-all"
+                                  title="Remove location"
+                                >
+                                  <X size={12} />
+                                </button>
+                              )}
+                            </div>
                           </div>
 
                           <div className="flex items-center gap-3">
                             <div className="flex-1 min-h-[36px] flex items-center">
-                              {isLocating ? (
+                              {showRemovedInline ? (
+                                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                                  <span className="text-xs text-red-500 font-bold uppercase tracking-wider">Location removed.</span>
+                                </div>
+                              ) : isLocating ? (
                                 <div className="flex items-center gap-2">
                                   <Loader2 size={14} className="animate-spin text-accent" />
                                   <span className="text-sm text-white/50 font-medium italic">Locating...</span>

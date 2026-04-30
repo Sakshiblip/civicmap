@@ -175,3 +175,21 @@
   @apply bg-emerald-500/90 border-emerald-400/20 text-white shadow-emerald-500/20;
 }
 
+/* Animations for removal */
+@keyframes fade-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.9); }
+}
+
+.animate-fade-out {
+  animation: fade-out 0.3s ease-out forwards;
+}
+
+@keyframes marker-fade-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-20px); }
+}
+
+.marker-fade-out {
+  animation: marker-fade-out 0.3s ease-out forwards !important;
+}
