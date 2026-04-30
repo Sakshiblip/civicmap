@@ -257,7 +257,7 @@ export default function MapComponent({
             position={draftPin} 
             icon={icons.pending}
             eventHandlers={{
-              popupclose: (e) => {
+              popupclose: (_e) => {
                 // If it's a manual close (e.g. from the X button), we should trigger the cancel logic
                 // But wait, the requirements say 'the X button'.
                 // If we call onCancelDraft here, any click away will also cancel it.
@@ -267,7 +267,7 @@ export default function MapComponent({
                   onCancelDraft();
                 }
               },
-              add: (e) => {
+              add: (_e) => {
                 // When marker is added, ensure popup is open
                 e.target.openPopup();
               }
