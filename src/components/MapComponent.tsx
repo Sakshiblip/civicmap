@@ -267,7 +267,7 @@ export default function MapComponent({
                   onCancelDraft();
                 }
               },
-              add: (_e) => {
+              add: (e) => {
                 // When marker is added, ensure popup is open
                 e.target.openPopup();
               }
