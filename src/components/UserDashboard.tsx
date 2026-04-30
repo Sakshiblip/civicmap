@@ -161,17 +161,17 @@ export default function UserDashboard() {
       .select('display_name')
       .eq('id', user.id)
       .single();
-    
+
     if (data?.display_name) {
       setDisplayName(data.display_name);
     }
   };
-  
+
   const checkDailyLimit = async () => {
     if (!user) return;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const { count, error } = await supabase
       .from('issues')
       .select('*', { count: 'exact', head: true })
@@ -213,6 +213,12 @@ export default function UserDashboard() {
 
   const handleMapClick = (lat: number, lng: number) => {
     if (activeTab === 'submit') {
+      // Clear any pending removal/undo states when a new pin is placed
+      setIsDraftRemoving(false);
+      setShowRemovedInline(false);
+      setUndoToast(null);
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+
       setDraftLocation([lat, lng]);
       fetchAddress(lat, lng);
     }
@@ -220,7 +226,7 @@ export default function UserDashboard() {
 
   const handleCancelDraft = () => {
     if (!draftLocation) return;
-    
+
     setIsDraftRemoving(true);
     // Visual feedback for marker removal
     setTimeout(() => {
@@ -230,10 +236,10 @@ export default function UserDashboard() {
       setSelectedAddress('');
       setIsDraftRemoving(false);
       setShowRemovedInline(true);
-      
+
       // Inline message duration
       setTimeout(() => setShowRemovedInline(false), 2000);
-      
+
       // Undo snackbar logic
       setUndoToast({ visible: true });
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
@@ -312,7 +318,7 @@ export default function UserDashboard() {
         const { data } = supabase.storage
           .from('issue-images')
           .getPublicUrl(filePath);
-        
+
         uploadedUrls.push(data.publicUrl);
       }
     }
@@ -329,7 +335,7 @@ export default function UserDashboard() {
       image_urls: uploadedUrls,
       status: 'pending'
     }).select().single();
-    if(!error){
+    if (!error) {
       await sendEmailNotification(data)
     }
 
@@ -338,17 +344,17 @@ export default function UserDashboard() {
     } else if (data) {
       setIssues((prev) => [data as Issue, ...prev]);
       setSubmittedIssue(data as Issue);
-      
+
       // Cleanup preview URLs
       objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
       objectUrlsRef.current = [];
-      
+
       // Update daily limit count
       await checkDailyLimit();
     }
 
     setIsSubmitting(false);
-  };  
+  };
 
   const handleSearchSelect = (lat: number, lng: number) => {
     setFlyTo([lat, lng]);
@@ -356,39 +362,39 @@ export default function UserDashboard() {
 
   const userIssues = issues.filter(i => i.email === user?.email);
 
-  
-async function sendEmailNotification(data: any){
-  await fetch("https://qluqaqlwtbjsdhikcfwv.supabase.co/functions/v1/send-issue-email", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    issue: {
-      title: "New Issue Created",
-      description: "New Issue Created with Issue type " + data.issue_type,
-    },
-  }),
-});
-}
+
+  async function sendEmailNotification(data: any) {
+    await fetch("https://qluqaqlwtbjsdhikcfwv.supabase.co/functions/v1/send-issue-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        issue: {
+          title: "New Issue Created",
+          description: "New Issue Created with Issue type " + data.issue_type,
+        },
+      }),
+    });
+  }
 
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
-      
+
       {/* Row 1: Navbar (Fixed 48px on mobile) */}
       <div className="fixed top-0 left-0 right-0 z-[5000] flex items-center justify-between bg-gray-900 border-b border-white/5 px-4 h-[48px] md:h-auto md:top-3 md:left-3 md:right-auto md:w-auto md:rounded-xl md:shadow-lg md:px-3 md:py-2">
         <div className="flex items-center gap-2">
           <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
-          <button 
-            onClick={logout} 
-            className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500/20 transition-all" 
+          <button
+            onClick={logout}
+            className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500/20 transition-all"
             title="Logout"
           >
             <LogOut size={16} />
           </button>
         </div>
-        <button 
+        <button
           onClick={() => setIsProfileOpen(true)}
           className="px-3 py-1.5 bg-accent/10 hover:bg-accent/20 border border-accent/20 rounded-lg text-accent text-[9px] font-black uppercase tracking-widest transition-all md:block"
         >
@@ -399,7 +405,7 @@ async function sendEmailNotification(data: any){
       {/* Row 2: Filters (Mobile Only, 40px) */}
       <div className="md:hidden fixed top-[48px] left-0 right-0 z-[4500] h-[40px] bg-gray-900 border-b border-white/5 flex items-center px-2 gap-2">
         <div className="flex-1 relative">
-          <select 
+          <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
             className="w-full bg-surface/50 border border-accent/30 rounded-full py-1.5 px-3 text-[10px] font-black text-white/80 appearance-none focus:outline-none focus:border-accent uppercase tracking-wider font-mono"
@@ -412,7 +418,7 @@ async function sendEmailNotification(data: any){
           <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
         </div>
         <div className="flex-1 relative">
-          <select 
+          <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="w-full bg-surface/50 border border-accent/30 rounded-full py-1.5 px-3 text-[10px] font-black text-white/80 appearance-none focus:outline-none focus:border-accent uppercase tracking-wider font-mono"
@@ -450,14 +456,14 @@ async function sendEmailNotification(data: any){
       <SearchBar onSelect={handleSearchSelect} userLocation={userLocation} />
 
       {/* Analytics Panel */}
-      <AnalyticsPanel 
-        issues={issues} 
-        isOpen={isAnalyticsOpen} 
-        onClose={() => setIsAnalyticsOpen(false)} 
+      <AnalyticsPanel
+        issues={issues}
+        isOpen={isAnalyticsOpen}
+        onClose={() => setIsAnalyticsOpen(false)}
       />
 
       {/* Layer Control Panel */}
-      <LayerControlPanel 
+      <LayerControlPanel
         overlays={overlays}
         onOverlayToggle={(key) => setOverlays(prev => ({ ...prev, [key]: !prev[key] }))}
         opacities={opacities}
@@ -497,7 +503,7 @@ async function sendEmailNotification(data: any){
               <div className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
               <p className="text-sm font-bold tracking-wide">Issue location removed.</p>
             </div>
-            <button 
+            <button
               onClick={handleUndoCancel}
               className="text-xs font-black uppercase tracking-[0.2em] text-accent hover:text-white transition-colors py-2 px-4 bg-accent/10 hover:bg-accent/20 rounded-lg border border-accent/20"
             >
@@ -508,10 +514,10 @@ async function sendEmailNotification(data: any){
       )}
 
       {/* Floating Draggable Sidebar / Bottom Sheet */}
-      <div 
-        style={{ 
-          left: typeof window !== 'undefined' && window.innerWidth >= 768 ? '24px' : '0', 
-          top: typeof window !== 'undefined' && window.innerWidth >= 768 ? '100px' : 'auto', 
+      <div
+        style={{
+          left: typeof window !== 'undefined' && window.innerWidth >= 768 ? '24px' : '0',
+          top: typeof window !== 'undefined' && window.innerWidth >= 768 ? '100px' : 'auto',
           cursor: 'auto',
           transform: !sheetOpen && typeof window !== 'undefined' && window.innerWidth < 768 ? 'translateY(calc(100% - 72px))' : 'translateY(0)',
           transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), left 0.1s, top 0.1s'
@@ -519,9 +525,9 @@ async function sendEmailNotification(data: any){
         className="fixed md:w-[320px] w-full bottom-0 md:bottom-auto z-[2000] glass flex flex-col shadow-2xl rounded-t-[32px] md:rounded-[32px] overflow-hidden select-none max-h-[75vh] md:max-h-[calc(100vh-80px)] animate-in slide-in-from-bottom-10 duration-500 pb-0"
       >
         {/* Minimal Centered Drag Handle */}
-        <div 
+        <div
           onClick={() => setSheetOpen(s => !s)}
-          className="w-10 h-1 bg-gray-400/50 rounded-full mx-auto my-3 cursor-pointer hover:bg-gray-400 transition-colors" 
+          className="w-10 h-1 bg-gray-400/50 rounded-full mx-auto my-3 cursor-pointer hover:bg-gray-400 transition-colors"
         />
 
         {/* Tabs - Smaller (Always Visible) */}
@@ -598,24 +604,22 @@ async function sendEmailNotification(data: any){
                   {/* Stepper Progress Lines */}
                   <div className="stepper-line w-full" />
                   <div className="stepper-line-active" style={{ width: `${((formStep - 1) / 2) * 100}%` }} />
-                  
+
                   {/* Steps */}
                   {[1, 2, 3].map((step) => (
                     <div key={step} className="relative z-20 flex flex-col items-center flex-1">
-                      <div 
-                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-500 font-bold border-2 text-[10px] ${
-                          formStep === step 
-                            ? 'bg-accent border-accent text-white shadow-lg shadow-accent/30 scale-110' 
-                            : formStep > step 
-                              ? 'bg-accent border-accent text-background' 
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-500 font-bold border-2 text-[10px] ${formStep === step
+                            ? 'bg-accent border-accent text-white shadow-lg shadow-accent/30 scale-110'
+                            : formStep > step
+                              ? 'bg-accent border-accent text-background'
                               : 'bg-surface border-white/20 text-white/40'
-                        }`}
+                          }`}
                       >
                         {formStep > step ? <CheckCircle size={14} strokeWidth={3} /> : step}
                       </div>
-                      <span className={`text-xs mt-1.5 font-bold uppercase tracking-widest transition-colors duration-300 ${
-                        formStep === step ? 'text-white' : 'text-white/40'
-                      }`}>
+                      <span className={`text-xs mt-1.5 font-bold uppercase tracking-widest transition-colors duration-300 ${formStep === step ? 'text-white' : 'text-white/40'
+                        }`}>
                         {step === 1 ? 'Map' : step === 2 ? 'Details' : 'Media'}
                       </span>
                     </div>
@@ -624,18 +628,17 @@ async function sendEmailNotification(data: any){
               </div>
             )}
 
-          {/* SUBMIT TAB - Compact */}
-          {activeTab === 'submit' && !submittedIssue && (
-            <div className="px-5 py-3 animate-in fade-in slide-in-from-right-4 duration-300">
-              <form onSubmit={handleSubmit} className="space-y-2">
-                {/* STEP 1: LOCATION */}
-                {formStep === 1 && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-500">
-                    <div className="space-y-2">
-                        <div 
-                          className={`premium-card p-2.5 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${
-                            draftLocation ? 'scale-[1.01] border-accent/20 glow-accent' : 'opacity-80'
-                          }`}
+            {/* SUBMIT TAB - Compact */}
+            {activeTab === 'submit' && !submittedIssue && (
+              <div className="px-5 py-3 animate-in fade-in slide-in-from-right-4 duration-300">
+                <form onSubmit={handleSubmit} className="space-y-2">
+                  {/* STEP 1: LOCATION */}
+                  {formStep === 1 && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-500">
+                      <div className="space-y-2">
+                        <div
+                          className={`premium-card p-2.5 bg-gradient-to-br from-surface to-surface/50 border-white/10 transition-all duration-500 ${draftLocation ? 'scale-[1.01] border-accent/20 glow-accent' : 'opacity-80'
+                            }`}
                         >
                           <div className="flex justify-between items-start mb-2">
                             <label className="text-[9px] font-black text-accent uppercase tracking-[0.2em] font-mono">
@@ -649,7 +652,7 @@ async function sendEmailNotification(data: any){
                                 </div>
                               )}
                               {draftLocation && (
-                                <button 
+                                <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); handleCancelDraft(); }}
                                   className="w-5 h-5 flex items-center justify-center bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-500 rounded-full transition-all"
@@ -688,302 +691,300 @@ async function sendEmailNotification(data: any){
                             </div>
                           </div>
                         </div>
-                    </div>
-
-                    <div className="sticky bottom-0 bg-surface/90 backdrop-blur-md -mx-5 px-5 py-3 border-t border-white/5 z-30 mt-4">
-                         <button
-                           type="button"
-                           disabled={!draftLocation}
-                           onClick={() => setFormStep(2)}
-                           className={`w-full py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all font-black text-[11px] group ${
-                             !draftLocation 
-                               ? 'bg-transparent border border-white/10 text-white/30 hover:bg-white/5 cursor-not-allowed shadow-none' 
-                               : 'bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'
-                           }`}
-                         >
-                           Next: Issue Type
-                           <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                         </button>
-                      {!draftLocation && (
-                        <p className="text-[9px] text-white/40 text-center animate-pulse font-bold tracking-wider uppercase mt-2">
-                          Drop a pin on the map to continue
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 2: DETAILS */}
-                {formStep === 2 && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-500">
-                    <div className="space-y-2">
-                      {/* Issue Type */}
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Select Category</label>
-                        <div className="grid grid-cols-3 gap-1">
-                          {['Pothole', 'Garbage', 'Street Light', 'Flooding', 'Graffiti', 'Other'].map((type) => (
-                            <button
-                              key={type}
-                              type="button"
-                              onClick={() => setIssueType(type)}
-                              className={`p-1.5 rounded-lg border text-[10px] font-bold transition-all ${
-                                issueType === type 
-                                  ? 'bg-accent text-background border-accent shadow-lg shadow-accent/10' 
-                                  : 'bg-surface/50 border-white/5 text-white/60 hover:border-white/20'
-                              }`}
-                            >
-                              {type}
-                            </button>
-                          ))}
-                        </div>
                       </div>
 
-                      {/* Description */}
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Describe Situation</label>
-                        <textarea
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          required
-                          rows={3}
-                          placeholder="What needs attention?"
-                          className="w-full bg-surface/50 border border-white/10 rounded-xl p-2.5 text-[11px] text-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none font-body min-h-[80px] transition-all resize-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="sticky bottom-0 bg-surface/90 backdrop-blur-md -mx-5 px-5 py-3 border-t border-white/5 z-30 mt-4 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFormStep(1)}
-                        className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 text-[10px]"
-                      >
-                        Back
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!description || description.length < 5}
-                        onClick={() => setFormStep(3)}
-                        className="flex-1 bg-gradient-to-r from-accent to-emerald-400 text-background font-black py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 shadow-xl shadow-accent/20 group text-[11px]"
-                      >
-                        Add Photos
-                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 3: PHOTOS & SUBMIT */}
-                {formStep === 3 && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-500">
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Evidence (Optional)</label>
-                      
-                      {imageUrls.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          {imageUrls.map((url, i) => (
-                            <div key={i} className="aspect-square rounded-lg overflow-hidden border border-white/10 relative group">
-                              <img src={url} alt="Preview" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newFiles = [...selectedFiles];
-                                  newFiles.splice(i, 1);
-                                  setSelectedFiles(newFiles);
-                                  const newUrls = [...imageUrls];
-                                  URL.revokeObjectURL(newUrls[i]);
-                                  newUrls.splice(i, 1);
-                                  setImageUrls(newUrls);
-                                }}
-                                className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white shadow-xl transform scale-0 group-hover:scale-100 transition-transform"
-                              >
-                                <X size={10} />
-                              </button>
-                            </div>
-                          ))}
-                          <div 
-                            onClick={handleImageDemo}
-                            className="aspect-square rounded-lg border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
-                          >
-                            <PlusCircle size={16} className="text-white/20 group-hover:text-accent" />
-                            <span className="text-[8px] font-bold text-white/30 group-hover:text-accent uppercase tracking-widest text-center px-1">Add More</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          onClick={handleImageDemo}
-                          className="premium-card p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-all group border-dashed"
+                      <div className="sticky bottom-0 bg-surface/90 backdrop-blur-md -mx-5 px-5 py-3 border-t border-white/5 z-30 mt-4">
+                        <button
+                          type="button"
+                          disabled={!draftLocation}
+                          onClick={() => setFormStep(2)}
+                          className={`w-full py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all font-black text-[11px] group ${!draftLocation
+                              ? 'bg-transparent border border-white/10 text-white/30 hover:bg-white/5 cursor-not-allowed shadow-none'
+                              : 'bg-gradient-to-r from-accent to-emerald-400 hover:to-accent text-background shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'
+                            }`}
                         >
-                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:bg-accent/10">
-                            <ImageIcon size={20} className="text-white/20 group-hover:text-accent" />
-                          </div>
-                          <div className="text-center">
-                            <p className="text-[11px] font-bold text-white group-hover:text-accent transition-colors">Select Photos</p>
-                            <p className="text-[8px] text-white/30 uppercase tracking-widest mt-0.5">PNG, JPG up to 10MB</p>
+                          Next: Issue Type
+                          <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                        </button>
+                        {!draftLocation && (
+                          <p className="text-[9px] text-white/40 text-center animate-pulse font-bold tracking-wider uppercase mt-2">
+                            Drop a pin on the map to continue
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 2: DETAILS */}
+                  {formStep === 2 && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-500">
+                      <div className="space-y-2">
+                        {/* Issue Type */}
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Select Category</label>
+                          <div className="grid grid-cols-3 gap-1">
+                            {['Pothole', 'Garbage', 'Street Light', 'Flooding', 'Graffiti', 'Other'].map((type) => (
+                              <button
+                                key={type}
+                                type="button"
+                                onClick={() => setIssueType(type)}
+                                className={`p-1.5 rounded-lg border text-[10px] font-bold transition-all ${issueType === type
+                                    ? 'bg-accent text-background border-accent shadow-lg shadow-accent/10'
+                                    : 'bg-surface/50 border-white/5 text-white/60 hover:border-white/20'
+                                  }`}
+                              >
+                                {type}
+                              </button>
+                            ))}
                           </div>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Summary Card - even smaller */}
-                    <div className="p-2 rounded-lg bg-white/5 border border-white/10 space-y-1">
-                       <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Summary</p>
-                       <div className="flex justify-between items-center text-[10px]">
+                        {/* Description */}
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Describe Situation</label>
+                          <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            required
+                            rows={3}
+                            placeholder="What needs attention?"
+                            className="w-full bg-surface/50 border border-white/10 rounded-xl p-2.5 text-[11px] text-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none font-body min-h-[80px] transition-all resize-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="sticky bottom-0 bg-surface/90 backdrop-blur-md -mx-5 px-5 py-3 border-t border-white/5 z-30 mt-4 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFormStep(1)}
+                          className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 text-[10px]"
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!description || description.length < 5}
+                          onClick={() => setFormStep(3)}
+                          className="flex-1 bg-gradient-to-r from-accent to-emerald-400 text-background font-black py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 shadow-xl shadow-accent/20 group text-[11px]"
+                        >
+                          Add Photos
+                          <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 3: PHOTOS & SUBMIT */}
+                  {formStep === 3 && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-500">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] font-mono ml-1">Evidence (Optional)</label>
+
+                        {imageUrls.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            {imageUrls.map((url, i) => (
+                              <div key={i} className="aspect-square rounded-lg overflow-hidden border border-white/10 relative group">
+                                <img src={url} alt="Preview" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newFiles = [...selectedFiles];
+                                    newFiles.splice(i, 1);
+                                    setSelectedFiles(newFiles);
+                                    const newUrls = [...imageUrls];
+                                    URL.revokeObjectURL(newUrls[i]);
+                                    newUrls.splice(i, 1);
+                                    setImageUrls(newUrls);
+                                  }}
+                                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white shadow-xl transform scale-0 group-hover:scale-100 transition-transform"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            ))}
+                            <div
+                              onClick={handleImageDemo}
+                              className="aspect-square rounded-lg border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
+                            >
+                              <PlusCircle size={16} className="text-white/20 group-hover:text-accent" />
+                              <span className="text-[8px] font-bold text-white/30 group-hover:text-accent uppercase tracking-widest text-center px-1">Add More</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={handleImageDemo}
+                            className="premium-card p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-all group border-dashed"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:bg-accent/10">
+                              <ImageIcon size={20} className="text-white/20 group-hover:text-accent" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[11px] font-bold text-white group-hover:text-accent transition-colors">Select Photos</p>
+                              <p className="text-[8px] text-white/30 uppercase tracking-widest mt-0.5">PNG, JPG up to 10MB</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Summary Card - even smaller */}
+                      <div className="p-2 rounded-lg bg-white/5 border border-white/10 space-y-1">
+                        <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Summary</p>
+                        <div className="flex justify-between items-center text-[10px]">
                           <span className="text-white/60">Type:</span>
                           <span className="font-bold text-accent">{issueType}</span>
-                       </div>
-                    </div>
-
-                    <div className="sticky bottom-0 bg-surface/90 backdrop-blur-md -mx-5 px-5 py-3 border-t border-white/5 z-30 mt-4 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFormStep(2)}
-                        className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 text-[10px]"
-                      >
-                        Back
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isSubmitting || dailyIssueCount >= 3}
-                        className="flex-1 bg-accent text-background font-black py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-accent/20 text-[11px]"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 size={14} className="animate-spin" />
-                            Wait...
-                          </>
-                        ) : (
-                          <>
-                            <Send size={14} />
-                            Complete
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </form>
-            </div>
-          )}
-
-          {/* LIST TAB */}
-          {activeTab === 'submit' && submittedIssue && (
-            <div className="p-8 flex flex-col items-center text-center space-y-6 animate-in zoom-in-95 duration-500">
-              <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center border border-accent/20 shadow-2xl shadow-accent/20 group">
-                <CheckCircle size={40} className="text-accent group-hover:scale-110 transition-transform" />
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black text-white tracking-tight">Report submitted!</h3>
-                <p className="text-sm text-white/40 leading-relaxed max-w-[240px] mx-auto">
-                  Our team has been notified. You can track its progress in your reports.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 w-full space-y-1">
-                <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Issue ID</label>
-                <p className="text-sm font-mono font-bold text-accent">{submittedIssue.id.slice(0, 8).toUpperCase()}</p>
-              </div>
-
-              <div className="flex flex-col gap-3 w-full pt-4">
-                <button
-                  onClick={() => {
-                    setActiveTab('list');
-                    setSubmittedIssue(null);
-                    setDraftLocation(null);
-                    setIssueType('Pothole');
-                    setDescription('');
-                    setImageUrls([]);
-                    setSelectedFiles([]);
-                    setFormStep(1);
-                  }}
-                  className="w-full bg-accent text-background font-black py-4 rounded-2xl shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2"
-                >
-                  <List size={16} />
-                  Track this issue
-                </button>
-                <button
-                  onClick={() => {
-                    setSubmittedIssue(null);
-                    setDraftLocation(null);
-                    setIssueType('Pothole');
-                    setDescription('');
-                    setImageUrls([]);
-                    setSelectedFiles([]);
-                    setFormStep(1);
-                  }}
-                  className="text-xs font-bold text-white/40 hover:text-accent transition-colors py-2"
-                >
-                  Report another issue
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'list' && (
-            <div className="p-4 space-y-4 animate-in fade-in slide-in-from-left-4 duration-300 pb-8">
-              {userIssues.length === 0 ? (
-                <div className="text-center py-12 text-white/40">
-                  <div className="w-16 h-16 bg-surface/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
-                    <List size={24} />
-                  </div>
-                  <p>No issues reported yet.</p>
-                  <button onClick={() => setActiveTab('submit')} className="text-accent hover:underline mt-2 text-sm">Report your first issue</button>
-                </div>
-              ) : (
-                userIssues.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(issue => (
-                  <div
-                    key={issue.id}
-                    onClick={() => setFlyTo([issue.lat, issue.lng])}
-                    className="bg-surface/80 border border-white/5 hover:border-accent/50 rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 group"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${issue.status === 'pending' ? 'bg-pending animate-pulse' : issue.status === 'in_progress' ? 'bg-inprogress' : 'bg-resolved'}`} />
-                        <h3 className="font-heading font-bold">{issue.issue_type}</h3>
-                      </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded bg-surface border border-white/10 uppercase tracking-widest ${issue.status === 'pending' ? 'text-pending' : issue.status === 'in_progress' ? 'text-inprogress' : 'text-resolved'
-                        }`}>
-                        {issue.status.replace('_', ' ')}
-                      </span>
-                    </div>
-
-                    <p className="text-sm text-white/60 line-clamp-2 mb-3 leading-relaxed">
-                      {issue.description}
-                    </p>
-
-                    <div className="flex items-center justify-between text-xs text-white/40 font-mono">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 text-accent/80" title={issue.email}>
-                          <span className="w-4 h-4 rounded-full bg-accent/20 flex items-center justify-center text-[10px] text-accent">
-                            @
-                          </span>
-                          <span>You</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Clock size={12} />
-                          {format(new Date(issue.created_at), 'MMM d, h:mm a')}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+
+                      <div className="sticky bottom-0 bg-surface/90 backdrop-blur-md -mx-5 px-5 py-3 border-t border-white/5 z-30 mt-4 flex gap-2">
                         <button
-                          onClick={() => handleShare(issue.id)}
-                          className="p-1.5 text-white/20 hover:text-accent hover:bg-accent/10 rounded transition-all"
-                          title="Share Issue"
+                          type="button"
+                          onClick={() => setFormStep(2)}
+                          className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 text-[10px]"
                         >
-                          <Share2 size={14} />
+                          Back
                         </button>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity text-accent flex items-center gap-1">
-                          View <ArrowRight size={12} />
+                        <button
+                          type="submit"
+                          disabled={isSubmitting || dailyIssueCount >= 3}
+                          className="flex-1 bg-accent text-background font-black py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-accent/20 text-[11px]"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin" />
+                              Wait...
+                            </>
+                          ) : (
+                            <>
+                              <Send size={14} />
+                              Complete
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </form>
+              </div>
+            )}
+
+            {/* LIST TAB */}
+            {activeTab === 'submit' && submittedIssue && (
+              <div className="p-8 flex flex-col items-center text-center space-y-6 animate-in zoom-in-95 duration-500">
+                <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center border border-accent/20 shadow-2xl shadow-accent/20 group">
+                  <CheckCircle size={40} className="text-accent group-hover:scale-110 transition-transform" />
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black text-white tracking-tight">Report submitted!</h3>
+                  <p className="text-sm text-white/40 leading-relaxed max-w-[240px] mx-auto">
+                    Our team has been notified. You can track its progress in your reports.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 w-full space-y-1">
+                  <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Issue ID</label>
+                  <p className="text-sm font-mono font-bold text-accent">{submittedIssue.id.slice(0, 8).toUpperCase()}</p>
+                </div>
+
+                <div className="flex flex-col gap-3 w-full pt-4">
+                  <button
+                    onClick={() => {
+                      setActiveTab('list');
+                      setSubmittedIssue(null);
+                      setDraftLocation(null);
+                      setIssueType('Pothole');
+                      setDescription('');
+                      setImageUrls([]);
+                      setSelectedFiles([]);
+                      setFormStep(1);
+                    }}
+                    className="w-full bg-accent text-background font-black py-4 rounded-2xl shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2"
+                  >
+                    <List size={16} />
+                    Track this issue
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSubmittedIssue(null);
+                      setDraftLocation(null);
+                      setIssueType('Pothole');
+                      setDescription('');
+                      setImageUrls([]);
+                      setSelectedFiles([]);
+                      setFormStep(1);
+                    }}
+                    className="text-xs font-bold text-white/40 hover:text-accent transition-colors py-2"
+                  >
+                    Report another issue
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'list' && (
+              <div className="p-4 space-y-4 animate-in fade-in slide-in-from-left-4 duration-300 pb-8">
+                {userIssues.length === 0 ? (
+                  <div className="text-center py-12 text-white/40">
+                    <div className="w-16 h-16 bg-surface/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
+                      <List size={24} />
+                    </div>
+                    <p>No issues reported yet.</p>
+                    <button onClick={() => setActiveTab('submit')} className="text-accent hover:underline mt-2 text-sm">Report your first issue</button>
+                  </div>
+                ) : (
+                  userIssues.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(issue => (
+                    <div
+                      key={issue.id}
+                      onClick={() => setFlyTo([issue.lat, issue.lng])}
+                      className="bg-surface/80 border border-white/5 hover:border-accent/50 rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 group"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${issue.status === 'pending' ? 'bg-pending animate-pulse' : issue.status === 'in_progress' ? 'bg-inprogress' : 'bg-resolved'}`} />
+                          <h3 className="font-heading font-bold">{issue.issue_type}</h3>
+                        </div>
+                        <span className={`text-xs font-bold px-2 py-1 rounded bg-surface border border-white/10 uppercase tracking-widest ${issue.status === 'pending' ? 'text-pending' : issue.status === 'in_progress' ? 'text-inprogress' : 'text-resolved'
+                          }`}>
+                          {issue.status.replace('_', ' ')}
+                        </span>
+                      </div>
+
+                      <p className="text-sm text-white/60 line-clamp-2 mb-3 leading-relaxed">
+                        {issue.description}
+                      </p>
+
+                      <div className="flex items-center justify-between text-xs text-white/40 font-mono">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5 text-accent/80" title={issue.email}>
+                            <span className="w-4 h-4 rounded-full bg-accent/20 flex items-center justify-center text-[10px] text-accent">
+                              @
+                            </span>
+                            <span>You</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock size={12} />
+                            {format(new Date(issue.created_at), 'MMM d, h:mm a')}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleShare(issue.id)}
+                            className="p-1.5 text-white/20 hover:text-accent hover:bg-accent/10 rounded transition-all"
+                            title="Share Issue"
+                          >
+                            <Share2 size={14} />
+                          </button>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity text-accent flex items-center gap-1">
+                            View <ArrowRight size={12} />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         )}
         {/* Loading Overlay */}
         {isLoading && (
@@ -998,12 +999,12 @@ async function sendEmailNotification(data: any){
 
 
       {/* Profile Sidebar Integrated */}
-      <ProfileSidebar 
-        user={user} 
-        isOpen={isProfileOpen} 
+      <ProfileSidebar
+        user={user}
+        isOpen={isProfileOpen}
         displayName={displayName}
         setDisplayName={setDisplayName}
-        onClose={() => setIsProfileOpen(false)} 
+        onClose={() => setIsProfileOpen(false)}
       />
     </div>
   );

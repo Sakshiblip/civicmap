@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Navigation, Filter, ChevronDown } from 'lucide-react';
+import { Navigation, Filter, ChevronDown, X } from 'lucide-react';
 import type { Issue, IssueStatus } from '../lib/supabase';
 import { format } from 'date-fns';
 import HeatmapLayer from './HeatmapLayer';
@@ -35,9 +35,9 @@ const icons = {
 };
 
 // Component to handle map clicks (Double-click or Long-press to report)
-function MapEvents({ 
-  onMapClick 
-}: { 
+function MapEvents({
+  onMapClick
+}: {
   onMapClick?: (lat: number, lng: number) => void
 }) {
   const map = useMap();
@@ -64,7 +64,7 @@ function MapEvents({
     const handleClick = (e: L.LeafletMouseEvent) => {
       const now = Date.now();
       const delay = now - lastTapTime;
-      
+
       if (delay < 300 && delay > 0) {
         handleAction(e);
         lastTapTime = 0; // Reset tap timer after detection
@@ -124,15 +124,15 @@ const userLocationIcon = new L.DivIcon({
   iconAnchor: [15, 15],
 });
 
-export default function MapComponent({ 
-  issues, 
-  onMapClick, 
+export default function MapComponent({
+  issues,
+  onMapClick,
   onLocateMe,
   onCancelDraft,
   isDraftRemoving = false,
-  interactive = true, 
-  selectedLocation, 
-  draftPin, 
+  interactive = true,
+  selectedLocation,
+  draftPin,
   userLocation,
   showFilters = true,
   statusFilter: statusFilterProp,
@@ -143,7 +143,7 @@ export default function MapComponent({
   showHeatmap = false
 }: MapComponentProps) {
   const defaultCenter: [number, number] = [19.0760, 72.8777]; // Mumbai
-  
+
   // Local state as fallback
   const [localStatusFilter, setLocalStatusFilter] = useState<'all' | IssueStatus>('all');
   const [localTypeFilter, setLocalTypeFilter] = useState('All');
@@ -174,9 +174,9 @@ export default function MapComponent({
 
   return (
     <div className="relative w-full h-full z-0 bg-background pointer-events-auto">
-      <MapContainer 
-        center={defaultCenter} 
-        zoom={13} 
+      <MapContainer
+        center={defaultCenter}
+        zoom={13}
         zoomControl={false}
         className="w-full h-full"
         dragging={interactive}
@@ -194,7 +194,7 @@ export default function MapComponent({
 
         {/* Floating Filter Bar (Desktop Only) */}
         {showFilters && (
-          <div 
+          <div
             className="absolute top-4 right-4 z-[9999] flex gap-2"
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
@@ -202,10 +202,10 @@ export default function MapComponent({
           >
             <div className="glass-card flex items-center px-4 py-2 gap-3 border border-white/10 shadow-2xl !bg-surface">
               <Filter size={14} className="text-accent" />
-              
+
               <div className="flex gap-2">
                 <div className="relative group z-[9999]">
-                  <select 
+                  <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as any)}
                     className="py-1.5 pl-3 pr-8 text-xs bg-surface hover:bg-surface/80 border border-white/10 rounded-lg font-bold text-white/80 appearance-none cursor-pointer focus:outline-none focus:border-accent transition-all uppercase tracking-wider font-mono"
@@ -219,7 +219,7 @@ export default function MapComponent({
                 </div>
 
                 <div className="relative group z-[9999]">
-                  <select 
+                  <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value)}
                     className="py-1.5 pl-3 pr-8 text-xs bg-surface hover:bg-surface/80 border border-white/10 rounded-lg font-bold text-white/80 appearance-none cursor-pointer focus:outline-none focus:border-accent transition-all uppercase tracking-wider font-mono"
@@ -234,8 +234,8 @@ export default function MapComponent({
                 </div>
               </div>
 
-              { (statusFilter !== 'all' || typeFilter !== 'All') && (
-                <button 
+              {(statusFilter !== 'all' || typeFilter !== 'All') && (
+                <button
                   onClick={() => { setStatusFilter('all'); setTypeFilter('All'); }}
                   className="text-[10px] font-bold text-accent hover:underline uppercase tracking-tight ml-1"
                 >
@@ -245,17 +245,17 @@ export default function MapComponent({
             </div>
           </div>
         )}
-        
+
 
 
         {/* Render MapEvents unconditionally to handle popup closing on tap */}
-        <MapEvents 
-          onMapClick={interactive ? onMapClick : undefined} 
+        <MapEvents
+          onMapClick={interactive ? onMapClick : undefined}
         />
         {selectedLocation && (
-          <FlyToLocation 
-            center={selectedLocation} 
-            zoom={userLocation && selectedLocation[0] === userLocation[0] && selectedLocation[1] === userLocation[1] ? 15 : 16} 
+          <FlyToLocation
+            center={selectedLocation}
+            zoom={userLocation && selectedLocation[0] === userLocation[0] && selectedLocation[1] === userLocation[1] ? 15 : 16}
           />
         )}
 
@@ -268,59 +268,61 @@ export default function MapComponent({
         )}
 
         {draftPin && (
-          <Marker 
-            position={draftPin} 
+          <Marker
+            position={draftPin}
             icon={icons.pending}
             eventHandlers={{
-              popupclose: (_e) => {
-                // If it's a manual close (e.g. from the X button), we should trigger the cancel logic
-                // But wait, the requirements say 'the X button'.
-                // If we call onCancelDraft here, any click away will also cancel it.
-                // To be safe, we'll check if the close button was the target if possible.
-                // Alternatively, we just call it and the user Dashboard handles it.
-                if (onCancelDraft) {
-                  onCancelDraft();
-                }
-              },
               add: (e) => {
                 // When marker is added, ensure popup is open
                 e.target.openPopup();
               }
             }}
           >
-            <Popup 
-              className={`custom-popup ${isDraftRemoving ? 'animate-fade-out' : ''}`} 
-              minWidth={popupWidth} 
+            <Popup
+              className={`custom-popup ${isDraftRemoving ? 'animate-fade-out' : ''}`}
+              minWidth={popupWidth}
               maxWidth={popupWidth}
+              closeButton={false}
             >
-              <div className="p-1 font-body text-sm font-bold">New Issue Location</div>
+              <div className="p-2 flex items-center justify-between gap-4">
+                <div className="font-body text-sm font-bold">New Issue Location</div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onCancelDraft) onCancelDraft();
+                  }}
+                  className="w-6 h-6 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full transition-all"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </Popup>
           </Marker>
         )}
 
         {filteredIssues.map((issue) => (
-          <Marker 
-            key={issue.id} 
-            position={[issue.lat, issue.lng]} 
+          <Marker
+            key={issue.id}
+            position={[issue.lat, issue.lng]}
             icon={icons[issue.status]}
           >
             <Popup className="custom-popup" minWidth={250} maxWidth={250}>
               <div className="flex flex-col text-white p-1">
                 {issue.image_urls && issue.image_urls.length > 0 && (
                   <div className="w-full h-[150px] overflow-hidden rounded-md bg-white/5 mb-3">
-                    <img 
-                      src={issue.image_urls[0]} 
-                      alt="Issue" 
-                      className="w-full h-full object-cover" 
+                    <img
+                      src={issue.image_urls[0]}
+                      alt="Issue"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                 )}
-                
+
                 <div className="px-1 space-y-1">
                   <h3 className="font-bold text-base leading-tight">
                     {issue.issue_type}
                   </h3>
-                  
+
                   <div className="flex items-center gap-2 text-[10px] text-white/50 font-bold uppercase tracking-wider">
                     <span>{issue.status.replace('_', ' ')}</span>
                     <span>•</span>
@@ -332,7 +334,7 @@ export default function MapComponent({
           </Marker>
         ))}
 
-        <LocateMeControl 
+        <LocateMeControl
           onLocateMe={onLocateMe}
           userLocation={userLocation}
         />
