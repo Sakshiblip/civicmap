@@ -10,6 +10,7 @@ import AnalyticsPanel from './AnalyticsPanel';
 import LayerControlPanel from './LayerControlPanel';
 import { Clock, Send, LogOut, ArrowRight, Loader2, ImageIcon, Share2, List, CheckCircle, MapPin, PlusCircle, Navigation, X, ChevronDown } from 'lucide-react';
 import ProfileSidebar from './ProfileSidebar';
+import { IssueStatus } from '@/types/issue';
 
 export default function UserDashboard() {
   const { user, logout } = useAuth();

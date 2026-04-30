@@ -113,6 +113,7 @@ interface MapComponentProps {
   setTypeFilter?: (type: string) => void;
   baseLayerUrl?: string;
   showHeatmap?: boolean;
+  compactFilters?: boolean;
 }
 
 // User Location Icon
