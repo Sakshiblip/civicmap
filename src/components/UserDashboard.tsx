@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import SearchBar from './SearchBar';
 import AnalyticsPanel from './AnalyticsPanel';
 import LayerControlPanel from './LayerControlPanel';
-import { Clock, Send, LogOut, ArrowRight, Loader2, ImageIcon, Share2, List, CheckCircle, MapPin, PlusCircle, Navigation, X } from 'lucide-react';
+import { Clock, Send, LogOut, ArrowRight, Loader2, ImageIcon, Share2, List, CheckCircle, MapPin, PlusCircle, Navigation, X, ChevronDown } from 'lucide-react';
 import ProfileSidebar from './ProfileSidebar';
 
 export default function UserDashboard() {
@@ -71,6 +71,10 @@ export default function UserDashboard() {
   const [showRemovedInline, setShowRemovedInline] = useState(false);
   const [undoToast, setUndoToast] = useState<{ visible: boolean } | null>(null);
   const undoTimerRef = useRef<any>(null);
+
+  // Filter State (Lifted from MapComponent)
+  const [statusFilter, setStatusFilter] = useState<'all' | IssueStatus>('all');
+  const [typeFilter, setTypeFilter] = useState('All');
 
   const baseLayerUrls = {
     osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -371,22 +375,53 @@ async function sendEmailNotification(data: any){
   return (
     <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden bg-background">
       
-      {/* Action Icons Panel */}
-      <div className="fixed top-3 left-3 z-50 flex items-center gap-2 bg-gray-900 rounded-xl shadow-lg px-3 py-2">
-        <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
-        <button 
-          onClick={logout} 
-          className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500/20 transition-all" 
-          title="Logout"
-        >
-          <LogOut size={16} />
-        </button>
+      {/* Row 1: Navbar (Fixed 48px on mobile) */}
+      <div className="fixed top-0 left-0 right-0 z-[5000] flex items-center justify-between bg-gray-900 border-b border-white/5 px-4 h-[48px] md:h-auto md:top-3 md:left-3 md:right-auto md:w-auto md:rounded-xl md:shadow-lg md:px-3 md:py-2">
+        <div className="flex items-center gap-2">
+          <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+          <button 
+            onClick={logout} 
+            className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500/20 transition-all" 
+            title="Logout"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
         <button 
           onClick={() => setIsProfileOpen(true)}
-          className="px-3 py-1.5 bg-accent/10 hover:bg-accent/20 border border-accent/20 rounded-lg text-accent text-[9px] font-black uppercase tracking-widest transition-all"
+          className="px-3 py-1.5 bg-accent/10 hover:bg-accent/20 border border-accent/20 rounded-lg text-accent text-[9px] font-black uppercase tracking-widest transition-all md:block"
         >
           My Account
         </button>
+      </div>
+
+      {/* Row 2: Filters (Mobile Only, 40px) */}
+      <div className="md:hidden fixed top-[48px] left-0 right-0 z-[4500] h-[40px] bg-gray-900 border-b border-white/5 flex items-center px-2 gap-2">
+        <div className="flex-1 relative">
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="w-full bg-surface/50 border border-accent/30 rounded-full py-1.5 px-3 text-[10px] font-black text-white/80 appearance-none focus:outline-none focus:border-accent uppercase tracking-wider font-mono"
+          >
+            <option value="all">Status: All</option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
+        </div>
+        <div className="flex-1 relative">
+          <select 
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="w-full bg-surface/50 border border-accent/30 rounded-full py-1.5 px-3 text-[10px] font-black text-white/80 appearance-none focus:outline-none focus:border-accent uppercase tracking-wider font-mono"
+          >
+            {['All', 'Garbage Disposal', 'Pothole', 'Street Light', 'Flooding', 'Graffiti', 'Other'].map(t => (
+              <option key={t} value={t}>{t === 'All' ? 'Type: All' : t}</option>
+            ))}
+          </select>
+          <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent pointer-events-none" />
+        </div>
       </div>
 
       {/* Map Section (Full screen) */}
@@ -398,6 +433,11 @@ async function sendEmailNotification(data: any){
           draftPin={draftLocation}
           onCancelDraft={handleCancelDraft}
           isDraftRemoving={isDraftRemoving}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          typeFilter={typeFilter}
+          setTypeFilter={setTypeFilter}
+          showFilters={typeof window !== 'undefined' && window.innerWidth >= 768}
           selectedLocation={flyTo}
           userLocation={userLocation}
           baseLayerUrl={baseLayerUrls['osm']}

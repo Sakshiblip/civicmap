@@ -107,7 +107,10 @@ interface MapComponentProps {
   userLocation?: [number, number] | null; // Current user position
   isAdmin?: boolean;
   showFilters?: boolean;
-  compactFilters?: boolean;
+  statusFilter?: 'all' | IssueStatus;
+  setStatusFilter?: (status: 'all' | IssueStatus) => void;
+  typeFilter?: string;
+  setTypeFilter?: (type: string) => void;
   baseLayerUrl?: string;
   showHeatmap?: boolean;
 }
@@ -131,13 +134,24 @@ export default function MapComponent({
   draftPin, 
   userLocation,
   showFilters = true,
-  compactFilters = false,
+  statusFilter: statusFilterProp,
+  setStatusFilter: setStatusFilterProp,
+  typeFilter: typeFilterProp,
+  setTypeFilter: setTypeFilterProp,
   baseLayerUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   showHeatmap = false
 }: MapComponentProps) {
   const defaultCenter: [number, number] = [19.0760, 72.8777]; // Mumbai
-  const [statusFilter, setStatusFilter] = useState<'all' | IssueStatus>('all');
-  const [typeFilter, setTypeFilter] = useState('All');
+  
+  // Local state as fallback
+  const [localStatusFilter, setLocalStatusFilter] = useState<'all' | IssueStatus>('all');
+  const [localTypeFilter, setLocalTypeFilter] = useState('All');
+
+  const statusFilter = statusFilterProp !== undefined ? statusFilterProp : localStatusFilter;
+  const setStatusFilter = setStatusFilterProp !== undefined ? setStatusFilterProp : setLocalStatusFilter;
+  const typeFilter = typeFilterProp !== undefined ? typeFilterProp : localTypeFilter;
+  const setTypeFilter = setTypeFilterProp !== undefined ? setTypeFilterProp : setLocalTypeFilter;
+
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   useEffect(() => {
@@ -177,52 +191,52 @@ export default function MapComponent({
         {/* Heatmap Layer */}
         <HeatmapLayer issues={issues} visible={showHeatmap} />
 
-        {/* Floating Filter Bar */}
+        {/* Floating Filter Bar (Desktop Only) */}
         {showFilters && (
           <div 
-            className={`absolute top-4 right-4 z-[9999] flex gap-2 ${compactFilters ? 'scale-90 origin-top-right' : ''}`}
+            className="absolute top-4 right-4 z-[9999] flex gap-2"
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`glass-card flex items-center ${compactFilters ? 'px-3 py-1.5 gap-2' : 'px-4 py-2 gap-3'} border border-white/10 shadow-2xl !bg-surface`}>
-              <Filter size={compactFilters ? 12 : 14} className="text-accent" />
+            <div className="glass-card flex items-center px-4 py-2 gap-3 border border-white/10 shadow-2xl !bg-surface">
+              <Filter size={14} className="text-accent" />
               
               <div className="flex gap-2">
                 <div className="relative group z-[9999]">
                   <select 
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as any)}
-                    className={`${compactFilters ? 'py-1 pl-2 pr-6 text-[10px]' : 'py-1.5 pl-3 pr-8 text-xs'} bg-surface hover:bg-surface/80 border border-white/10 rounded-lg font-bold text-white/80 appearance-none cursor-pointer focus:outline-none focus:border-accent transition-all uppercase tracking-wider font-mono`}
+                    className="py-1.5 pl-3 pr-8 text-xs bg-surface hover:bg-surface/80 border border-white/10 rounded-lg font-bold text-white/80 appearance-none cursor-pointer focus:outline-none focus:border-accent transition-all uppercase tracking-wider font-mono"
                   >
-                    <option value="all" className="bg-surface text-white">{compactFilters ? 'Status' : 'Status: All'}</option>
+                    <option value="all" className="bg-surface text-white">Status: All</option>
                     <option value="pending" className="bg-surface text-white">Pending</option>
                     <option value="in_progress" className="bg-surface text-white">In Progress</option>
                     <option value="resolved" className="bg-surface text-white">Resolved</option>
                   </select>
-                  <ChevronDown size={compactFilters ? 10 : 12} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                  <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                 </div>
 
                 <div className="relative group z-[9999]">
                   <select 
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value)}
-                    className={`${compactFilters ? 'py-1 pl-2 pr-6 text-[10px]' : 'py-1.5 pl-3 pr-8 text-xs'} bg-surface hover:bg-surface/80 border border-white/10 rounded-lg font-bold text-white/80 appearance-none cursor-pointer focus:outline-none focus:border-accent transition-all uppercase tracking-wider font-mono`}
+                    className="py-1.5 pl-3 pr-8 text-xs bg-surface hover:bg-surface/80 border border-white/10 rounded-lg font-bold text-white/80 appearance-none cursor-pointer focus:outline-none focus:border-accent transition-all uppercase tracking-wider font-mono"
                   >
                     {types.map(t => (
                       <option key={t} value={t} className="bg-surface text-white">
-                        {t === 'All' ? (compactFilters ? 'Type' : 'Type: All') : t}
+                        {t === 'All' ? 'Type: All' : t}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown size={compactFilters ? 10 : 12} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                  <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                 </div>
               </div>
 
               { (statusFilter !== 'all' || typeFilter !== 'All') && (
                 <button 
                   onClick={() => { setStatusFilter('all'); setTypeFilter('All'); }}
-                  className={`${compactFilters ? 'text-[9px]' : 'text-[10px]'} font-bold text-accent hover:underline uppercase tracking-tight ml-1`}
+                  className="text-[10px] font-bold text-accent hover:underline uppercase tracking-tight ml-1"
                 >
                   Clear
                 </button>

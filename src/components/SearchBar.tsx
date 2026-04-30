@@ -106,9 +106,9 @@ export default function SearchBar({ onSelect, userLocation }: SearchBarProps) {
   };
 
   return (
-    <div ref={containerRef} className="fixed top-16 left-1/2 -translate-x-1/2 z-[3000] w-full max-w-md px-4 sm:px-0">
-      <div className="relative group">
-        <div className="flex bg-surface/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden focus-within:ring-2 focus-within:ring-accent/30 transition-all duration-300">
+    <div ref={containerRef} className="fixed top-[88px] md:top-16 left-0 md:left-1/2 md:-translate-x-1/2 z-[3000] w-full md:max-w-md">
+      <div className="relative group px-0 md:px-0">
+        <div className="flex bg-gray-900 md:bg-surface/80 backdrop-blur-xl border-b md:border border-white/5 md:border-white/10 md:rounded-2xl shadow-2xl overflow-hidden focus-within:ring-2 focus-within:ring-accent/30 transition-all duration-300">
           <div className="flex items-center pl-4 text-white/40">
             {isLoading ? <Loader2 size={18} className="animate-spin text-accent" /> : <Search size={18} />}
           </div>
@@ -146,7 +146,7 @@ export default function SearchBar({ onSelect, userLocation }: SearchBarProps) {
 
         {/* Results Dropdown */}
         {isOpen && results.length > 0 && (
-          <div className="absolute top-full mt-2 w-full glass shadow-2xl rounded-2xl overflow-hidden border border-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute top-full mt-0 md:mt-2 w-full glass shadow-2xl md:rounded-2xl overflow-hidden border-b border-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
             {results.map((result, idx) => (
               <button
                 key={result.place_id}
